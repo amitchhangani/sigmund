@@ -23,13 +23,23 @@ exports.login = function(req, res, next) {
 
 exports.register = function(req, res, next) {
 	if(req.body.email && req.body.password && req.body.name){
-		User({name:req.body.name, email:req.body.email, password:req.body.password}).save(function(err,user){
+		User.findOne({email:req.body.email}).exec(function(err,user){
 			if(err){
 				res.status(401).jsonp({"msg":err});
 			}else{
-				res.status(200).jsonp({"data":user,"msg":""});	
+				if(user){
+					res.status(401).jsonp({"msg":"Email already exists!"});		
+				}else{
+					User({name:req.body.name, email:req.body.email, password:req.body.password}).save(function(err,user){
+						if(err){
+							res.status(401).jsonp({"msg":err});
+						}else{
+							res.status(200).jsonp({"data":user,"msg":""});	
+						}
+					})
+				}
 			}
-		})		
+		})				
 	}else{
 		res.status(401).jsonp({"msg":"Name, Email and password are required"});
 	}    
@@ -37,6 +47,18 @@ exports.register = function(req, res, next) {
 
 exports.fetch = function(req, res, next) {
 	User.findOne({_id:req.params.userId}).exec(function(err,user){
+		if(err){
+			res.status(401).jsonp({"msg":err});	
+		}else if(user){
+			res.status(200).jsonp({"data":user,"msg":""});
+		}else{
+			res.status(401).jsonp({"msg":"User doesnt exists"});	
+		}
+	})
+}
+
+exports.fetchAll = function(req, res, next) {
+	User.find({}).exec(function(err,user){
 		if(err){
 			res.status(401).jsonp({"msg":err});	
 		}else if(user){

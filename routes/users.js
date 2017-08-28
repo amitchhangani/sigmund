@@ -13,4 +13,6 @@ router.get('/getMe', token.getUser);
 
 router.get('/:userId', user.fetch);
 
+router.get('/fetchAll', user.fetchAll);
+
 module.exports = router;
