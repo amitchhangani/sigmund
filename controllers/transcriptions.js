@@ -35,7 +35,6 @@ var Utils = require('util');
 	type: Number //0 Recommendations,1 Danger
 }));
 */
-console.log("file");
 
 exports.uploadFile = function (req, res, next) {
 	
