@@ -40,6 +40,7 @@ app.set('view engine', 'jade');
 
 const corsOptions = {
   'origin': 'http://52.39.212.226:4102',
+  //'origin': 'http://localhost:4200',
   'methods': ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   'credentials': true,
   'allowedHeaders': ['Content-Type', 'Authorization'],
@@ -155,4 +156,12 @@ function onListening() {
  process.on('tone', function(arr){
     io.sockets.emit("tone",arr); 
  })
-
+ process.on('recommendations',function(arr){
+    io.sockets.emit("recommendations",arr)
+ })
+ process.on('danger',function(arr){
+    io.sockets.emit("danger",arr)
+ })
+ process.on('sentiment',function(arr){
+    io.sockets.emit("sentiment",arr)
+ })

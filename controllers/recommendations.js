@@ -59,3 +59,53 @@ exports.save = function(req, res, next) {
   		}  		
   	}
 }
+
+var transcript='';
+
+exports.fetchAll = function(text) {
+	transcript=text;
+	var result = [];
+	var danger = [];
+	var resulti=0;
+	var dangeri=0;
+	Recommendation.find({type:2}).exec(function(err,recommendations){
+		if(recommendations){
+			for(var i=0; i<recommendations.length; i++){
+				dangeri=i;
+				danger.push({"name":recommendations[dangeri].name, tags:[], count:0});
+				for(var j=0; j<recommendations[dangeri].tags.length; j++){
+					if((transcript.split(recommendations[dangeri].tags[j].value).length-1)>0){
+						danger[dangeri].count+=transcript.split(recommendations[dangeri].tags[j].value).length-1;
+						danger[dangeri].percent=danger[dangeri].count*(recommendations[dangeri].factor)*100;
+						danger[dangeri].tags.push({"tag":recommendations[dangeri].tags[j].value, "count":transcript.split(recommendations[dangeri].tags[j].value).length-1});
+					}						
+				}
+			}
+			var d=0;
+			var x=0;
+			for(var i=0; i<danger.length; i++){
+				if(danger[i].tags.length){
+					d+=danger[i].percent;
+					x++;
+				}
+			}
+			process.emit('danger',(d/x));
+		}		
+	});
+  	Recommendation.find({type:1}).exec(function(err,recommendations){
+		if(recommendations){
+			for(var i=0; i<recommendations.length; i++){
+				resulti=i;
+				result.push({"name":recommendations[resulti].name,tags:[], count:0});
+				for(var j=0; j<recommendations[resulti].tags.length; j++){
+					if((transcript.split(recommendations[resulti].tags[j].value).length-1)>0){
+						result[resulti].count+=transcript.split(recommendations[resulti].tags[j].value).length-1;
+						result[resulti].percent=result[resulti].count*(recommendations[resulti].factor)*100;
+						result[resulti].tags.push({"tag":recommendations[resulti].tags[j].value, "count":transcript.split(recommendations[resulti].tags[j].value).length-1});
+					}						
+				}				
+			}			
+			process.emit('recommendations',result);
+		}
+	});
+}

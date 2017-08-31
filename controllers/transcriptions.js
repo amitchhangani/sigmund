@@ -11,7 +11,7 @@ var speech_to_text = new SpeechToTextV1({
 	username: 'e7e41131-81b3-47be-8525-f4065fc5314e',
 	password: 'q8D4DqkC3BOr'
 });
-
+var recommendation = require('./recommendations');
 
 var ToneAnalyzerV3 = require('watson-developer-cloud/tone-analyzer/v3');
 
@@ -22,6 +22,13 @@ var toneAnalyzer = new ToneAnalyzerV3({
   username: '73ab9669-5393-4ee4-a32c-c7de4cdec26d',
   password: 'jDuUGZAJi0sd',
   version_date: '2016-05-19'
+});
+
+const NaturalLanguageUnderstandingV1 = require('watson-developer-cloud/natural-language-understanding/v1.js');
+const nlu = new NaturalLanguageUnderstandingV1({
+	username: '2415dec1-4d5d-4968-80b8-8ea909b1da4a',
+  	password: 'ISSsONvpTnbq',
+  	version_date: NaturalLanguageUnderstandingV1.VERSION_DATE_2016_01_23
 });
 
 var multer  = require('multer')
@@ -55,7 +62,6 @@ exports.uploadFile = function (req, res, next) {
 		storage: storage
 	}).single('file')
 	upload(req, res, function(err) {
-		console.log("req.files",req.file.mimetype);
 		var params = {
 			'model': 'en-US_NarrowbandModel',
 			'content_type': req.file.mimetype,
@@ -93,11 +99,12 @@ exports.uploadFile = function (req, res, next) {
 		recognizeStream.on('speaker_labels', function (event) {
 			onEvent('Speaker_Labels:', event);
 		});
-	var speaker=0;
-	var transcript="";
-	var oldTrans="";
-	var toneCount=1;
-	var oldTone={};
+		var speaker=0;
+		var transcript="";
+		var oldTrans="";
+		var toneCount=1;
+		var oldTone={};
+		var trs="";
 		function onEvent(name, event) {
 
 			//console.log('===****===\n\n',Utils.inspect(event,false,null),'\n\n===****===');
@@ -113,9 +120,15 @@ exports.uploadFile = function (req, res, next) {
 			if(name=="Speaker_Labels:"){
 				speaker=result.speaker_labels[result.speaker_labels.length-1].speaker;
 				if(transcript!=oldTrans){
-					console.log("Speaker "+speaker, "transcript: "+transcript);
+					trs+=" "+transcript;
 					process.emit('watson',{speaker,transcript})
 					if(speaker!=0){
+						recommendation.fetchAll(trs);
+						nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
+							if(!err){
+								process.emit('sentiment',data.sentiment);
+							}
+						})
 						toneAnalyzer.tone({text:transcript}, function(err, data) {
 						    if (err) {
 						      return next(err);
@@ -160,4 +173,8 @@ exports.uploadFile = function (req, res, next) {
 			res.status(404).jsonp({"msg":(req.params.type==1?"Recommendations":"Danger Harms")+" not found"});
 		}
 	});*/
+}
+
+function fetchRecommendations(text){
+
 }
