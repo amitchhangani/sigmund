@@ -175,6 +175,33 @@ exports.uploadFile = function (req, res, next) {
 	});*/
 }
 
-function fetchRecommendations(text){
-
+exports.fetchLiveRecordingData = function (req,res){
+	var trs = req.body.trs;
+	var transcript = req.body.transcript;
+	recommendation.fetchAll(trs);
+	var oldTone={};
+	nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
+		if(!err){
+			process.emit('sentiment',data.sentiment);
+		}
+	})
+	toneAnalyzer.tone({text:transcript}, function(err, data) {
+		var toneCount=1;
+	    if (err) {
+	      return next(err);
+	    }						    
+	    if(oldTone.length){
+	    	for(var i=0; i<oldTone.length; i++){
+	    		oldTone[i].score=oldTone[i].score*toneCount;
+	    		oldTone[i].score+=data.document_tone.tone_categories[0].tones[i].score;
+	    		oldTone[i].score/=(toneCount+1)
+	    	}
+	    	process.emit('tone',oldTone);
+	    }else{
+	    	process.emit('tone',data.document_tone.tone_categories[0].tones)
+	    	oldTone=data.document_tone.tone_categories[0].tones;	
+	    }    
+	    toneCount++;
+	});
+	res.status(200).jsonp({"msg":"success"})
 }

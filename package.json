@@ -19,6 +19,7 @@
     "request-json": "^0.6.2",
     "serve-favicon": "~2.4.2",
     "socket.io": "^2.0.3",
+    "vcap_services": "^0.3.4",
     "watson-developer-cloud": "^2.39.0"
   }
 }

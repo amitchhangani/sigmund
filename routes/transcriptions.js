@@ -4,5 +4,6 @@ var token = require('../controllers/accessTokens')
 var transcriptions = require('../controllers/transcriptions')
 /* GET home page. */
 router.post('/upload', transcriptions.uploadFile);
+router.post('/fetchLiveRecordingData', transcriptions.fetchLiveRecordingData);
 
 module.exports = router;

@@ -1,5 +1,7 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
+const watson = require('watson-developer-cloud');
+const vcapServices = require('vcap_services');
 
 var Recommendation = mongoose.model('Recommendation', new Schema({ name: String, tags:[], factor: Number, type: Number /*0 Recommendations,1 Danger*/  }));
 
@@ -108,4 +110,29 @@ exports.fetchAll = function(text) {
 			process.emit('recommendations',result);
 		}
 	});
+}
+
+var sttAuthService = new watson.AuthorizationV1(
+  Object.assign(
+    {
+      username: "e7e41131-81b3-47be-8525-f4065fc5314e", // or hard-code credentials here
+      password: "q8D4DqkC3BOr"
+    },
+    vcapServices.getCredentials('speech_to_text') // pulls credentials from environment in bluemix, otherwise returns {}
+  )
+);
+exports.getToken = function(req, res) {
+  sttAuthService.getToken(
+    {
+      url: watson.SpeechToTextV1.URL
+    },
+    function(err, token) {
+      if (err) {
+        console.log('Error retrieving token: ', err);
+        res.status(500).send('Error retrieving token');
+        return;
+      }
+      res.jsonp({token:token});
+    }
+  );
 }
