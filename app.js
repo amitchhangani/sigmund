@@ -39,7 +39,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 const corsOptions = {
-  'origin': 'http://52.39.212.226:4102',
+  'origin': 'https://stagingsdei.com',
   //'origin': 'http://localhost:4200',
   'methods': ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   'credentials': true,
