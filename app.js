@@ -12,8 +12,17 @@ var debug = require('debug')('signora:server');
 //var port = normalizePort(process.env.PORT || '4101');
 var port = normalizePort('4101');
 var app = express();
-var http = require('http');
-var server = http.createServer(app);
+var http = require('https');
+//var http = require('http');
+
+var privateKey  = fs.readFileSync('./certs/stagingsdei_com.key', 'utf8');
+var certificate = fs.readFileSync('./certs/c86aaff33f318ca4.crt', 'utf8');
+var ca = fs.readFileSync('./certs/gd_bundle-g2-g1.crt');
+var httpsOptions = {key: privateKey, cert: certificate, ca: ca};
+
+
+var server = http.createServer(httpsOptions, app);
+//var server = http.createServer(app);
 
 
 // sign with RSA SHA256
