@@ -121,7 +121,7 @@ exports.uploadFile = function (req, res, next) {
 				speaker=result.speaker_labels[result.speaker_labels.length-1].speaker;
 				if(transcript!=oldTrans){
 					trs+=" "+transcript;
-					process.emit('watson',{speaker,transcript})
+					process.emit('watson',{speaker:transcript})
 					if(speaker!=0){
 						recommendation.fetchAll(trs);
 						nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
@@ -178,8 +178,15 @@ exports.uploadFile = function (req, res, next) {
 exports.fetchLiveRecordingData = function (req,res){
 	var trs = req.body.trs;
 	var transcript = req.body.transcript;
+
 	recommendation.fetchAll(trs);
 	var oldTone={};
+	
+	if(req.params.type){
+		var speaker = req.body.speaker;
+		console.log(speaker);
+		process.emit('watson',{speaker:speaker,transcript:transcript})
+	}
 	nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
 		if(!err){
 			process.emit('sentiment',data.sentiment);
