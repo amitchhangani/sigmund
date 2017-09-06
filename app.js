@@ -21,8 +21,8 @@ var ca = fs.readFileSync('./certs/gd_bundle-g2-g1.crt');
 var httpsOptions = {key: privateKey, cert: certificate, ca: ca};
 
 
-var server = http.createServer(httpsOptions, app);
 //var server = http.createServer(app);
+var server = http.createServer(httpsOptions,app);
 
 
 // sign with RSA SHA256
@@ -160,7 +160,7 @@ function onListening() {
 
 
  process.on('watson', function(obj) {;
-    io.sockets.emit("test", obj);
+    io.sockets.emit("transcript", obj);
  })
  process.on('tone', function(arr){
     io.sockets.emit("tone",arr); 

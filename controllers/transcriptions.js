@@ -79,8 +79,6 @@ exports.uploadFile = function (req, res, next) {
 		var recognizeStream = speech_to_text.createRecognizeStream(params);
 		// Pipe in the audio.
 		fs.createReadStream(req.file.path).pipe(recognizeStream);
-		// Pipe out the transcription to a file.
-		recognizeStream.pipe(fs.createWriteStream('transcription.txt'));
 		// Get strings instead of buffers from 'data' events.
 		recognizeStream.setEncoding('utf8');
 		// Listen for events.
@@ -105,23 +103,48 @@ exports.uploadFile = function (req, res, next) {
 		var toneCount=1;
 		var oldTone={};
 		var trs="";
+		var trans=[];
+		var lastSp=0;
+		var lastIndex=0;
+		var speakers=[], lastCnt=0;
 		function onEvent(name, event) {
 
 			//console.log('===****===\n\n',Utils.inspect(event,false,null),'\n\n===****===');
 			var result = JSON.parse(JSON.stringify(event));
-			//console.log("result",result.results);
-			if(name=="Results:"){
+				
+			if(result.speaker_labels && result.results){
+				
+				//console.log("Speakers Array:",result.speaker_labels.length);
+				//console.log("Transcript Array:",result.results[0].alternatives[0].timestamps.length);
+				if(result.speaker_labels.length==result.results[0].alternatives[0].timestamps.length && result.speaker_labels.length!=lastCnt){
+					lastCnt=result.speaker_labels.length;
+					//console.log("speakers",result.speaker_labels);
+					//console.log("results",result.results[0].alternatives[0].timestamps);
+
+					for(var i=0; i<result.speaker_labels.length; i++){
+						if(i==0 || result.speaker_labels[i].speaker!=lastSp){
+							trans.push({"speaker":result.speaker_labels[i].speaker, "transcript":result.results[0].alternatives[0].timestamps[i][0]});
+						}else{
+							trans[trans.length-1].transcript+=' '+result.results[0].alternatives[0].timestamps[i][0];							
+						}
+						lastSp=result.speaker_labels[i].speaker;
+						lastIndex=trans.length;
+					}
+					process.emit('watson',trans);
+				}
+			}			
+			if(name=="Results:"){				
 				//var result=;
+				
 				if(result.results[result.results.length-1].final){
 					transcript=result.results[result.results.length-1].alternatives[0].transcript;
 				}
 			}
-			//console.log(result.speaker_labels);
 			if(name=="Speaker_Labels:"){
 				speaker=result.speaker_labels[result.speaker_labels.length-1].speaker;
 				if(transcript!=oldTrans){
 					trs+=" "+transcript;
-					process.emit('watson',{speaker:transcript})
+					process.emit('watson',{speaker,transcript})
 					if(speaker!=0){
 						recommendation.fetchAll(trs);
 						nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
@@ -147,8 +170,8 @@ exports.uploadFile = function (req, res, next) {
 						    toneCount++;
 						});
 					}
-
 				}
+				
 				//transcript="";
 				oldTrans=transcript;
 				speaker=0;
@@ -176,17 +199,29 @@ exports.uploadFile = function (req, res, next) {
 }
 
 exports.fetchLiveRecordingData = function (req,res){
-	var trs = req.body.trs;
-	var transcript = req.body.transcript;
+	var trs = "";
+	var transcript = "";
 
-	recommendation.fetchAll(trs);
-	var oldTone={};
 	
 	if(req.params.type){
 		var speaker = req.body.speaker;
 		console.log(speaker);
-		process.emit('watson',{speaker:speaker,transcript:transcript})
+		//process.emit('watson',{speaker:speaker,transcript:transcript})
+		var speaker0=req.body.speaker[0].speaker;
+		for(var i=0; i<req.body.speaker.length; i++){
+			if(req.body.speaker[i].speaker!=speaker0){
+				transcript=req.body.speaker[i].transcript;
+				trs+=" "+req.body.speaker[i].transcript;
+			}
+		}
+	}else{
+		trs = req.body.trs;
+		transcript = req.body.transcript;
 	}
+
+	recommendation.fetchAll(trs);
+	var oldTone={};
+	
 	nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
 		if(!err){
 			process.emit('sentiment',data.sentiment);
