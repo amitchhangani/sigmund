@@ -15,6 +15,11 @@ var recommendation = require('./recommendations');
 
 var ToneAnalyzerV3 = require('watson-developer-cloud/tone-analyzer/v3');
 
+//model require
+var Transcript = require('./../model/transcript.js');
+var Transcript_data = require('./../model/transcript_data.js');
+
+
 // Create the service wrapper
 var toneAnalyzer = new ToneAnalyzerV3({
   // If unspecified here, the TONE_ANALYZER_USERNAME and TONE_ANALYZER_PASSWORD environment properties will be checked
@@ -142,34 +147,96 @@ exports.uploadFile = function (req, res, next) {
 			}
 			if(name=="Speaker_Labels:"){
 				speaker=result.speaker_labels[result.speaker_labels.length-1].speaker;
+				var spkr = speaker;
 				if(transcript!=oldTrans){
 					trs+=" "+transcript;
 					process.emit('watson',{speaker,transcript})
-					if(speaker!=0){
-						recommendation.fetchAll(trs);
-						nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
-							if(!err){
-								process.emit('sentiment',data.sentiment);
+					//saving each transcription as a saperate document
+					var transObj = new Transcript({user_id : req.user._id ,patient_id:"2"});
+					transObj.save(function(err,resp){
+						if(err) {
+							console.log(err);
+						}else {
+							if(resp) {
+								Transcript_dataObj = new Transcript_data({
+									transcript_id : resp._id,
+									transcript : {
+										speaker : spkr,
+										transcript : transcript
+									}
+								});
+								Transcript_dataObj.save(function(err1,tdRes){
+									if(err1){
+										console.log(err);
+									}else {
+										if(tdRes){
+											//console.log("nlunlunlunlunlunlunlul==>",spkr)
+											if(spkr!=0){
+												recommendation.fetchAll(trs);
+												 //console.log("nlunlunlunlunlunlunlul22")
+												nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
+													if(!err){
+														
+														process.emit('sentiment',data.sentiment);
+
+														Transcript_data.findOne({_id : tdRes._id, transcript_id : resp._id }).exec(function(error,nluUpdate){
+															if(!error){
+																nluUpdate.transcript.nlu = data.sentiment;
+																nluUpdate.save(function(errrr,respp){
+																	//console.log('asdf',respp);
+																})
+															}
+														})
+
+													}
+												})
+
+
+												toneAnalyzer.tone({text:transcript}, function(err, data) {
+
+												    if (err) {
+												      return next(err);
+												    }						    
+												    if(oldTone.length){
+												    	for(var i=0; i<oldTone.length; i++){
+												    		oldTone[i].score=oldTone[i].score*toneCount;
+												    		oldTone[i].score+=data.document_tone.tone_categories[0].tones[i].score;
+												    		oldTone[i].score/=(toneCount+1)
+												    	}
+												    	process.emit('tone',oldTone);
+												    	//console.log("trans",transcript,"==","tone",oldTone);
+												    	//Transcript_data.update({_id : tdRes._id, transcript_id : resp._id },{ $set: { tone : oldTone }}).exec(function(error,nluUpdate){})
+												    	Transcript_data.findOne({_id : tdRes._id, transcript_id : resp._id }).exec(function(error,nluUpdate){
+															if(!error){
+																nluUpdate.transcript.tone = oldTone
+																nluUpdate.save(function(errrr,respp){
+																	//console.log('asdf',respp);
+																})
+															}
+														})
+												    }else{
+												    	process.emit('tone',data.document_tone.tone_categories[0].tones)
+												    	//console.log("trans2==>",transcript,"==","tone2==>",data.document_tone.tone_categories[0].tones);
+												    	Transcript_data.findOne({_id : tdRes._id, transcript_id : resp._id }).exec(function(error,nluUpdate){
+															if(!error){
+																nluUpdate.transcript.tone = data.document_tone.tone_categories[0].tones
+																nluUpdate.save(function(errrr,respp){
+																	//console.log('asdf',respp);
+																})
+															}
+														})
+												    	oldTone=data.document_tone.tone_categories[0].tones;	
+												    }    
+												    toneCount++;
+												});
+											}
+										}
+									}
+								})
+
 							}
-						})
-						toneAnalyzer.tone({text:transcript}, function(err, data) {
-						    if (err) {
-						      return next(err);
-						    }						    
-						    if(oldTone.length){
-						    	for(var i=0; i<oldTone.length; i++){
-						    		oldTone[i].score=oldTone[i].score*toneCount;
-						    		oldTone[i].score+=data.document_tone.tone_categories[0].tones[i].score;
-						    		oldTone[i].score/=(toneCount+1)
-						    	}
-						    	process.emit('tone',oldTone);
-						    }else{
-						    	process.emit('tone',data.document_tone.tone_categories[0].tones)
-						    	oldTone=data.document_tone.tone_categories[0].tones;	
-						    }    
-						    toneCount++;
-						});
-					}
+						}
+					});
 				}
 				
 				//transcript="";

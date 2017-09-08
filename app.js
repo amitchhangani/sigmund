@@ -6,7 +6,7 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
-
+var fs = require('fs');
 var debug = require('debug')('signora:server');
 
 //var port = normalizePort(process.env.PORT || '4101');
@@ -39,9 +39,28 @@ var users = require('./routes/users');
 
 //var app = express();
 
+// Bootstrap models
+var models_path = __dirname + '/model';
+var walk = function(path) {
+    fs.readdirSync(path).forEach(function(file) {
+        //console.log(file);
+        var newPath = path + '/' + file;
+        var stat = fs.statSync(newPath);
+        if (stat.isFile()) {
+            if (/(.*)\.(js$|coffee$)/.test(file)) {
+                require(newPath);
+            }
+        } else if (stat.isDirectory()) {
+            walk(newPath);
+        }
+    });
+};
+walk(models_path);
+
 
 mongoose.connect('mongodb://testrnd:testrnd2780@localhost/testrnd');
 //mongoose.connect('mongodb://localhost/sigmund');
+
 var Schema = mongoose.Schema;
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
