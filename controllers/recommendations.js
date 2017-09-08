@@ -64,7 +64,7 @@ exports.save = function(req, res, next) {
 
 var transcript='';
 
-exports.fetchAll = function(text) {
+exports.fetchAll = function(text, socket) {
 	transcript=text;
 	var result = [];
 	var danger = [];
@@ -91,7 +91,7 @@ exports.fetchAll = function(text) {
 					x++;
 				}
 			}
-			process.emit('danger',(d/x));
+			process.emit('danger',{danger:(d/x),user:socket});
 		}		
 	});
   	Recommendation.find({type:1}).exec(function(err,recommendations){
@@ -107,7 +107,7 @@ exports.fetchAll = function(text) {
 					}						
 				}				
 			}			
-			process.emit('recommendations',result);
+			process.emit('recommendations',{reco:result,user:socket});
 		}
 	});
 }

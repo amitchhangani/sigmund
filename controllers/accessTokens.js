@@ -1,5 +1,6 @@
 var jwt = require('jsonwebtoken');
 var encKey='shhhhh';
+var User=require('./users').User;
 
 //backdate a jwt 30 seconds 
 //var older_token = jwt.sign({ foo: 'bar', iat: Math.floor(Date.now() / 1000) - 30 }, 'shhhhh');
@@ -38,6 +39,26 @@ exports.validateToken = function(req, res, next){
 			}else{
 				req.user=decoded["_doc"];
 				next();
+			}  
+		});
+	}else{
+		res.status(401).jsonp({"msg":"Token is required"});
+	}	
+}
+
+
+exports.validateParamToken = function(req, res, next){	
+	if(req.params.userId){		
+		jwt.verify(req.params.userId, encKey, function(err, decoded) {
+			if(err){
+				res.status(401).jsonp({"msg":err});
+			}else{
+				User.findOne({_id:decoded["_doc"]._id}).exec(function(err, user){
+					if(!err){
+						req.user=user;
+						next();
+					}
+				})
 			}  
 		});
 	}else{

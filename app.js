@@ -24,7 +24,8 @@ var httpsOptions = {key: privateKey, cert: certificate, ca: ca};
 //var server = http.createServer(app);
 var server = http.createServer(httpsOptions,app);
 
-
+var jwt = require('jsonwebtoken');
+var encKey='shhhhh';
 // sign with RSA SHA256
 //var cert = fs.readFileSync('private.key');  // get private key
 //var token = jwt.sign({ foo: 'bar' }, cert, { algorithm: 'RS256'});
@@ -169,7 +170,6 @@ function onError(error) {
  * Event listener for HTTP server "listening" event.
  */
 function onListening() {
-  console.log("listenning")
   var addr = server.address();
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
@@ -177,19 +177,27 @@ function onListening() {
   console.log('Listening on ' + bind);
 }
 
+  io.sockets.on("connection", function(data){
+    var user = require("./controllers/users");
+    jwt.verify(data.request._query.token, encKey, function(err, decoded) {
+      if(!err){
+        user.update(decoded["_doc"],data.id);
+      }  
+    });
+  })
 
- process.on('watson', function(obj) {;
-    io.sockets.emit("transcript", obj);
+ process.on('watson', function(obj) {
+    io.sockets.connected[obj.user].emit("transcript", obj.trans);
  })
  process.on('tone', function(arr){
-    io.sockets.emit("tone",arr); 
+    io.sockets.connected[arr.user].emit("tone",arr.tone); 
  })
- process.on('recommendations',function(arr){
-    io.sockets.emit("recommendations",arr)
+ process.on('recommendations',function(arr){  
+    io.sockets.connected[arr.user].emit("recommendations",arr.reco)
  })
  process.on('danger',function(arr){
-    io.sockets.emit("danger",arr)
+    io.sockets.connected[arr.user].emit("danger",arr.danger)
  })
  process.on('sentiment',function(arr){
-    io.sockets.emit("sentiment",arr)
+    io.sockets.connected[arr.user].emit("sentiment",arr.senti)
  })

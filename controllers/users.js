@@ -1,7 +1,8 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
+var User;
 /* GET users listing. */
-var User = mongoose.model('User', new Schema({ name: String, email: String, password: String }));
+exports.User = User = mongoose.model('User', new Schema({ name: String, email: String, password: String, socketId:{type:String, default:""} }));
 
 
 exports.login = function(req, res, next) {
@@ -68,3 +69,13 @@ exports.fetchAll = function(req, res, next) {
 		}
 	})
 }
+
+exports.update = function(user,socketId){
+	User.findOne({_id:user._id}).exec(function(err, user){
+		if(!err){
+			user.socketId=socketId;
+			user.save();
+		}
+	})
+}
+

@@ -6,11 +6,19 @@ var upload = multer({ dest: 'uploads/'});
 var SpeechToTextV1 = require('watson-developer-cloud/speech-to-text/v1');
 var fs = require('fs');
 request = require('request-json');
+
+var jwt = require('jsonwebtoken');
+var encKey='shhhhh';
+
 var client = request.createClient('http://localhost:3000');
 var speech_to_text = new SpeechToTextV1({
 	username: 'e7e41131-81b3-47be-8525-f4065fc5314e',
 	password: 'q8D4DqkC3BOr'
 });
+var user = require("./users");
+var User = user.User;
+
+
 var recommendation = require('./recommendations');
 
 var ToneAnalyzerV3 = require('watson-developer-cloud/tone-analyzer/v3');
@@ -80,6 +88,17 @@ exports.uploadFile = function (req, res, next) {
 			'keywords': ['colorado', 'tornado', 'tornadoes'],
 			'keywords_threshold': 0.5
 		};
+
+		jwt.verify(req.params.userId, encKey, function(err, decoded) {
+	      if(!err){
+	        User.findOne({_id:decoded["_doc"]._id}).exec(function(err, user){
+				if(!err){
+					
+				}
+			})
+	      }  
+	    });
+
 		// Create the stream.
 		var recognizeStream = speech_to_text.createRecognizeStream(params);
 		// Pipe in the audio.
@@ -88,20 +107,22 @@ exports.uploadFile = function (req, res, next) {
 		recognizeStream.setEncoding('utf8');
 		// Listen for events.
 		recognizeStream.on('results', function (event) {
-			onEvent('Results:', event);
+			onEvent('Results:', event, req.user.socketId);
 		});
 		recognizeStream.on('data', function (event) {
-			onEvent('Data:', event);
+			onEvent('Data:', event, req.user.socketId);
 		});
 		recognizeStream.on('error', function (event) {
-			onEvent('Error:', event);
+			onEvent('Error:', event, req.user.socketId);
 		});
 		recognizeStream.on('close', function (event) {
-			onEvent('Close:', event);
+			onEvent('Close:', event, req.user.socketId);
 		});
 		recognizeStream.on('speaker_labels', function (event) {
-			onEvent('Speaker_Labels:', event);
+			onEvent('Speaker_Labels:', event, req.user.socketId);
 		});
+
+
 		var speaker=0;
 		var transcript="";
 		var oldTrans="";
@@ -112,7 +133,7 @@ exports.uploadFile = function (req, res, next) {
 		var lastSp=0;
 		var lastIndex=0;
 		var speakers=[], lastCnt=0;
-		function onEvent(name, event) {
+		function onEvent(name, event, socket) {
 
 			//console.log('===****===\n\n',Utils.inspect(event,false,null),'\n\n===****===');
 			var result = JSON.parse(JSON.stringify(event));
@@ -135,12 +156,11 @@ exports.uploadFile = function (req, res, next) {
 						lastSp=result.speaker_labels[i].speaker;
 						lastIndex=trans.length;
 					}
-					process.emit('watson',trans);
+					process.emit('watson',{trans:trans, user:socket});					
 				}
 			}			
 			if(name=="Results:"){				
-				//var result=;
-				
+				//var result=;				
 				if(result.results[result.results.length-1].final){
 					transcript=result.results[result.results.length-1].alternatives[0].transcript;
 				}
@@ -149,8 +169,8 @@ exports.uploadFile = function (req, res, next) {
 				speaker=result.speaker_labels[result.speaker_labels.length-1].speaker;
 				var spkr = speaker;
 				if(transcript!=oldTrans){
-					trs+=" "+transcript;
-					process.emit('watson',{speaker,transcript})
+					trs+=" "+transcript;			
+					process.emit('watson',{trans:transcript, user:socket})
 					//saving each transcription as a saperate document
 					var transObj = new Transcript({user_id : req.user._id ,patient_id:"2"});
 					transObj.save(function(err,resp){
@@ -172,12 +192,12 @@ exports.uploadFile = function (req, res, next) {
 										if(tdRes){
 											//console.log("nlunlunlunlunlunlunlul==>",spkr)
 											if(spkr!=0){
-												recommendation.fetchAll(trs);
-												 //console.log("nlunlunlunlunlunlunlul22")
+												recommendation.fetchAll(trs,socket);
+												//console.log("nlunlunlunlunlunlunlul22")
 												nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
 													if(!err){
 														
-														process.emit('sentiment',data.sentiment);
+														process.emit('sentiment',{senti:data.sentiment,user:socket});
 
 														Transcript_data.findOne({_id : tdRes._id, transcript_id : resp._id }).exec(function(error,nluUpdate){
 															if(!error){
@@ -203,7 +223,7 @@ exports.uploadFile = function (req, res, next) {
 												    		oldTone[i].score+=data.document_tone.tone_categories[0].tones[i].score;
 												    		oldTone[i].score/=(toneCount+1)
 												    	}
-												    	process.emit('tone',oldTone);
+												    	process.emit('tone',{tone:oldTone,user:socket});
 												    	//console.log("trans",transcript,"==","tone",oldTone);
 												    	//Transcript_data.update({_id : tdRes._id, transcript_id : resp._id },{ $set: { tone : oldTone }}).exec(function(error,nluUpdate){})
 												    	Transcript_data.findOne({_id : tdRes._id, transcript_id : resp._id }).exec(function(error,nluUpdate){
@@ -215,7 +235,7 @@ exports.uploadFile = function (req, res, next) {
 															}
 														})
 												    }else{
-												    	process.emit('tone',data.document_tone.tone_categories[0].tones)
+												    	process.emit('tone',{tone:data.document_tone.tone_categories[0].tones,user:socket})
 												    	//console.log("trans2==>",transcript,"==","tone2==>",data.document_tone.tone_categories[0].tones);
 												    	Transcript_data.findOne({_id : tdRes._id, transcript_id : resp._id }).exec(function(error,nluUpdate){
 															if(!error){
@@ -269,8 +289,6 @@ exports.fetchLiveRecordingData = function (req,res,next){
 	var trs = "";
 	var transcript = "";
 
-	console.log("speakers",req.body.speakers);
-	
 	if(req.body.speakers){
 		var speaker = req.body.speakers;
 		//process.emit('watson',{speaker:speaker,transcript:transcript})
@@ -287,19 +305,17 @@ exports.fetchLiveRecordingData = function (req,res,next){
 	}
 	if(req.params.type){
 		if(req.body.speakers){
-			process.emit("watson",req.body.speakers)
+			process.emit("watson",{trans:req.body.speakers,user:req.user.socketId})
 		}else{
-			process.emit("watson",{speaker:req.body.speaker,transcript:req.body.transcript})
+			process.emit("watson",{trans:{speaker:req.body.speaker,transcript:req.body.transcript},user:req.user.socketId})
 		}
 	}
-	console.log("trs",trs);
-	console.log("transcript",transcript);
-	recommendation.fetchAll(trs);
+	recommendation.fetchAll(trs,req.user.socketId);
 	var oldTone={};
 	
 	nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
 		if(!err){
-			process.emit('sentiment',data.sentiment);
+			process.emit('sentiment',{senti:data.sentiment,user:req.user.socketId});
 		}
 	})
 	toneAnalyzer.tone({text:transcript}, function(err, data) {
@@ -313,9 +329,9 @@ exports.fetchLiveRecordingData = function (req,res,next){
 	    		oldTone[i].score+=data.document_tone.tone_categories[0].tones[i].score;
 	    		oldTone[i].score/=(toneCount+1)
 	    	}
-	    	process.emit('tone',oldTone);
+	    	process.emit('tone',{tone:oldTone,user:req.user.socketId});
 	    }else{
-	    	process.emit('tone',data.document_tone.tone_categories[0].tones)
+	    	process.emit('tone',{tone:data.document_tone.tone_categories[0].tones,user:req.user.socketId})
 	    	oldTone=data.document_tone.tone_categories[0].tones;	
 	    }    
 	    toneCount++;
