@@ -198,27 +198,35 @@ exports.uploadFile = function (req, res, next) {
 	});*/
 }
 
-exports.fetchLiveRecordingData = function (req,res){
+exports.fetchLiveRecordingData = function (req,res,next){
 	var trs = "";
 	var transcript = "";
 
+	console.log("speakers",req.body.speakers);
 	
-	if(req.params.type){
-		var speaker = req.body.speaker;
-		console.log(speaker);
+	if(req.body.speakers){
+		var speaker = req.body.speakers;
 		//process.emit('watson',{speaker:speaker,transcript:transcript})
-		var speaker0=req.body.speaker[0].speaker;
-		for(var i=0; i<req.body.speaker.length; i++){
-			if(req.body.speaker[i].speaker!=speaker0){
-				transcript=req.body.speaker[i].transcript;
-				trs+=" "+req.body.speaker[i].transcript;
+		var speaker0=req.body.speakers[0].speaker;
+		for(var i=0; i<req.body.speakers.length; i++){
+			if(req.body.speakers[i].speaker!=speaker0){
+				transcript=req.body.speakers[i].transcript;
+				trs+=" "+req.body.speakers[i].transcript;
 			}
 		}
 	}else{
 		trs = req.body.trs;
 		transcript = req.body.transcript;
 	}
-
+	if(req.params.type){
+		if(req.body.speakers){
+			process.emit("watson",req.body.speakers)
+		}else{
+			process.emit("watson",{speaker:req.body.speaker,transcript:req.body.transcript})
+		}
+	}
+	console.log("trs",trs);
+	console.log("transcript",transcript);
 	recommendation.fetchAll(trs);
 	var oldTone={};
 	
