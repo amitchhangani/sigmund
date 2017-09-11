@@ -37,7 +37,7 @@ var encKey='shhhhh';
 var transcriptions = require('./routes/transcriptions');
 var recommendations = require('./routes/recommendations');
 var users = require('./routes/users');
-
+var patient = require('./routes/patient');
 //var app = express();
 
 // Bootstrap models
@@ -99,7 +99,7 @@ var callSocket = function (req, res, next) {
 app.use('/user', users)
 app.use('/recommendations', recommendations)
 app.use('/transcriptions', callSocket, transcriptions)
-
+app.use('/patient', patient)
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   var err = new Error('Not Found');

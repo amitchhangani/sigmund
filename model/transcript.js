@@ -9,9 +9,9 @@ var transcriptSchame = new Schema({
         ref: 'User'
     },
     patient_id: {
-        type : String
-        // type: Schema.Types.ObjectId, 
-        // ref: 'Patient'
+        //type : String
+        type: Schema.Types.ObjectId, 
+        ref: 'Patient'
     },
     created: {
                 type: Date,
