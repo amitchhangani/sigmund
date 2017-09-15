@@ -66,7 +66,7 @@ exports.save = function(req, res, next) {
 var transcript='';
 // tra, socket, transciption_id,userId, patientId
 exports.fetchAll = function(text, socket, transcription_id, patient) {
-	transcript=text;
+	transcript=text.toLowerCase();
 	var result = [];
 	var danger = [];
 	var resulti=0;
@@ -77,7 +77,7 @@ exports.fetchAll = function(text, socket, transcription_id, patient) {
 				dangeri=i;
 				danger.push({"name":recommendations[dangeri].name, tags:[], count:0});
 				for(var j=0; j<recommendations[dangeri].tags.length; j++){
-					if((transcript.split(recommendations[dangeri].tags[j].value).length-1)>0){
+					if((transcript.split(recommendations[dangeri].tags[j].value.toLowerCase()).length-1)>0){
 						danger[dangeri].count+=transcript.split(recommendations[dangeri].tags[j].value).length-1;
 						danger[dangeri].percent=danger[dangeri].count*(recommendations[dangeri].factor)*100;
 						danger[dangeri].tags.push({"tag":recommendations[dangeri].tags[j].value, "count":transcript.split(recommendations[dangeri].tags[j].value).length-1});
@@ -101,7 +101,7 @@ exports.fetchAll = function(text, socket, transcription_id, patient) {
 				resulti=i;
 				result.push({"name":recommendations[resulti].name,tags:[], count:0});
 				for(var j=0; j<recommendations[resulti].tags.length; j++){
-					if((transcript.split(recommendations[resulti].tags[j].value).length-1)>0){
+					if((transcript.split(recommendations[resulti].tags[j].value.toLowerCase()).length-1)>0){
 						result[resulti].count+=transcript.split(recommendations[resulti].tags[j].value).length-1;
 						result[resulti].percent=result[resulti].count*(recommendations[resulti].factor)*100;
 						result[resulti].tags.push({"tag":recommendations[resulti].tags[j].value, "count":transcript.split(recommendations[resulti].tags[j].value).length-1});
@@ -109,16 +109,18 @@ exports.fetchAll = function(text, socket, transcription_id, patient) {
 				}				
 			}//{ name: 'Risky', tags: [ [Object] ], count: 1, percent: 10 }			
 			process.emit('recommendations',{reco:result,user:socket,patient:patient});
-			var patientRec = new PatientRecomendation({ name : result[0].name, tags :result[0].tags , count :result[0].count , percent : result[0].percent, transcription_id : transcription_id  });
-			patientRec.save(function(err,data){
-				if(err){
-					console.log(err);
-				}else {
-					if(data){
-						//console.log("Patient Recomendations saved")
+			PatientRecomendation.remove({transcription_id:transcription_id}).exec(function(err,trs){
+				var patientRec = new PatientRecomendation({ name : result[0].name, tags :result[0].tags , count :result[0].count , percent : result[0].percent, transcription_id : transcription_id  });
+				patientRec.save(function(err,data){
+					if(err){
+						console.log(err);
+					}else {
+						if(data){
+							//console.log("Patient Recomendations saved")
+						}
 					}
-				}
-			})
+				})
+			})			
 		}
 	});
 }
@@ -146,4 +148,24 @@ exports.getToken = function(req, res) {
       res.jsonp({token:token});
     }
   );
+}
+
+exports.getPatientRecommendations = function(req, res){
+	PatientRecomendation.find({$where:'this.tags.length > 0'},{tags:1}).exec(function(err, pr){
+		if(!err){
+			var tags={};
+			for(var i=0; i < pr.length; i++){
+				for(var j=0; j < pr[i].tags.length; j++){
+					if(tags[pr[i].tags[j].tag]){
+						tags[pr[i].tags[j].tag]+=pr[i].tags[j].count;
+					}else{
+						tags[pr[i].tags[j].tag]=pr[i].tags[j].count;
+					}
+				}
+			}
+			res.status(200).jsonp({msg:'',tags:tags})
+		}else{
+			res.status(404).jsonp({msg:err})
+		}
+	})
 }
