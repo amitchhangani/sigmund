@@ -65,7 +65,7 @@ exports.save = function(req, res, next) {
 
 var transcript='';
 // tra, socket, transciption_id,userId, patientId
-exports.fetchAll = function(text, socket, transcription_id) {
+exports.fetchAll = function(text, socket, transcription_id, patient) {
 	transcript=text;
 	var result = [];
 	var danger = [];
@@ -92,7 +92,7 @@ exports.fetchAll = function(text, socket, transcription_id) {
 					x++;
 				}
 			}
-			process.emit('danger',{danger:(d/x),user:socket});
+			process.emit('danger',{danger:(d/x),user:socket,patient:patient});
 		}		
 	});
   	Recommendation.find({type:1}).exec(function(err,recommendations){
@@ -108,7 +108,7 @@ exports.fetchAll = function(text, socket, transcription_id) {
 					}						
 				}				
 			}//{ name: 'Risky', tags: [ [Object] ], count: 1, percent: 10 }			
-			process.emit('recommendations',{reco:result,user:socket});
+			process.emit('recommendations',{reco:result,user:socket,patient:patient});
 			var patientRec = new PatientRecomendation({ name : result[0].name, tags :result[0].tags , count :result[0].count , percent : result[0].percent, transcription_id : transcription_id  });
 			patientRec.save(function(err,data){
 				if(err){

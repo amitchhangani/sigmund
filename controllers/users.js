@@ -2,7 +2,7 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 var User;
 /* GET users listing. */
-exports.User = User = mongoose.model('User', new Schema({ name: String, email: String, password: String, socketId:{type:String, default:""} }));
+exports.User = User = mongoose.model('User', new Schema({ name: String, email: String, password: String, socketId:[] }));
 
 
 exports.login = function(req, res, next) {
@@ -73,7 +73,21 @@ exports.fetchAll = function(req, res, next) {
 exports.update = function(user,socketId){
 	User.findOne({_id:user._id}).exec(function(err, user){
 		if(!err){
-			user.socketId=socketId;
+			if(user.socketId){
+				if(typeof user.socketId == 'object'){
+					user.socketId.push(socketId);
+				} else if(typeof user.socketId == 'string'){
+					delete user.socketId;
+					user.socketId=[];
+					user.socketId.push(socketId);							
+				} else {				
+					user.socketId=[];
+					user.socketId.push(socketId);							
+				}	
+			} else {				
+				user.socketId=[];
+				user.socketId.push(socketId);							
+			}
 			user.save();
 		}
 	})
@@ -92,7 +106,6 @@ exports.updateUser = function(req,res){
 }
 
 exports.delete = function(req,res){
-	console.log("here");
 	User.remove({_id:req.params.userId}).exec(function(err, user){
 		if(!err){
 			res.send({msg: user});

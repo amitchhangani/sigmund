@@ -109,7 +109,7 @@ exports.uploadFile = function(req, res, next) {
 						'model': 'en-US_NarrowbandModel',
 						'content_type': req.file.mimetype,
 						'interim_results': true,
-						'max_alternatives': 3,
+						'max_alternatives': 1,
 						'word_confidence': false,
 						'speakerLabels': true,
 						'formattedMessages': [],
@@ -166,37 +166,45 @@ exports.uploadFile = function(req, res, next) {
 					var lastIndex = 0;
 					var speakers = [],
 						lastCnt = 0;
+					var results=[];
 
 					function onEvent(name, event, socket) {
+						var translation=[];
 						//console.log('===****===\n\n',Utils.inspect(event,false,null),'\n\n===****===');
 						var result = JSON.parse(JSON.stringify(event));
-
-						if (result.speaker_labels && result.results) {
-							//console.log("Speakers Array:",result.speaker_labels.length);
-							//console.log("Transcript Array:",result.results[0].alternatives[0].timestamps.length);
-							if (result.speaker_labels.length == result.results[0].alternatives[0].timestamps.length && result.speaker_labels.length != lastCnt) {
-								lastCnt = result.speaker_labels.length;
-								//console.log("speakers",result.speaker_labels);
-								//console.log("results",result.results[0].alternatives[0].timestamps);
-
-								for (var i = 0; i < result.speaker_labels.length; i++) {
-									if (i == 0 || result.speaker_labels[i].speaker != lastSp) {
-										trans.push({
-											"speaker": result.speaker_labels[i].speaker,
-											"transcript": result.results[0].alternatives[0].timestamps[i][0]
-										});
-									} else {
-										trans[trans.length - 1].transcript += ' ' + result.results[0].alternatives[0].timestamps[i][0];
-									}
-									lastSp = result.speaker_labels[i].speaker;
-									lastIndex = trans.length;
-								}
-								process.emit('watson', {
-									trans: trans,
-									user: socket
-								});
-							}
+						if(result.results){
+							results=result.results
 						}
+
+						if (result.speaker_labels){
+					      //if (event.speaker_labels.length == this.results[0].alternatives[0].timestamps.length && event.speaker_labels.length != this.lastCnt){
+					        for(let k=0; k< results.length; k++){
+					          if(results[k].alternatives[0].timestamps){
+					            for (let i = 0; i < result.speaker_labels.length; i++){
+					              for(let j =0; j < results[k].alternatives[0].timestamps.length; j++){
+					                if(results[k].alternatives[0].timestamps[j][1]==event.speaker_labels[i].from){
+					                  //console.log(this.results[k].alternatives[0])
+					                  //console.log(this.results[k].alternatives[0].timestamps[j])
+					                  trans.push({'speaker':event.speaker_labels[i].speaker, 'transcript':results[k].alternatives[0].timestamps[j][0]});        
+					                }
+					              }          
+					            }
+					          }          
+					        }
+					        for(var i=0; i< trans.length; i++){
+					          if(translation.length==0 || lastSp!=trans[i].speaker){
+					            translation.push({"speaker":trans[i].speaker,"transcript":trans[i].transcript})
+					          }else{
+					            translation[translation.length-1].transcript+=" "+trans[i].transcript;
+					          }
+					          lastSp=trans[i].speaker;
+					        }
+					        process.emit('watson', {
+									trans: translation,
+									user: socket,
+									patient:req.body.patient_id
+								});
+					    }
 						if (name == "Results:") {
 							//var result=;				
 							if (result.results[result.results.length - 1].final) {
@@ -210,7 +218,8 @@ exports.uploadFile = function(req, res, next) {
 								trs += " " + transcript;
 								process.emit('watson', {
 									trans: transcript,
-									user: socket
+									user: socket,
+									patient:req.body.patient_id
 								})
 								Transcript_dataObj = new Transcript_data({
 									transcript_id: resp._id,
@@ -227,7 +236,7 @@ exports.uploadFile = function(req, res, next) {
 											//console.log("nlunlunlunlunlunlunlul==>",spkr)
 											if (spkr != 0) {
 												// parameter => tra, socket, transciption_id 
-												recommendation.fetchAll(trs, socket,resp._id);
+												recommendation.fetchAll(trs, socket,resp._id,req.body.patient_id);
 												//console.log("nlunlunlunlunlunlunlul22")
 												nlu.analyze({
 													"features": {
@@ -238,7 +247,8 @@ exports.uploadFile = function(req, res, next) {
 													if (!err) {
 														process.emit('sentiment', {
 															senti: data.sentiment,
-															user: socket
+															user: socket,															
+															patient:req.body.patient_id
 														});
 														Transcript_data.findOne({
 															_id: tdRes._id,
@@ -267,7 +277,8 @@ exports.uploadFile = function(req, res, next) {
 														}
 														process.emit('tone', {
 															tone: oldTone,
-															user: socket
+															user: socket,
+															patient:req.body.patient_id
 														});
 														//console.log("trans",transcript,"==","tone",oldTone);
 														//Transcript_data.update({_id : tdRes._id, transcript_id : resp._id },{ $set: { tone : oldTone }}).exec(function(error,nluUpdate){})
@@ -285,7 +296,8 @@ exports.uploadFile = function(req, res, next) {
 													} else {
 														process.emit('tone', {
 															tone: data.document_tone.tone_categories[0].tones,
-															user: socket
+															user: socket,
+															patient:req.body.patient_id
 														})
 														//console.log("trans2==>",transcript,"==","tone2==>",data.document_tone.tone_categories[0].tones);
 														Transcript_data.findOne({
@@ -336,6 +348,7 @@ exports.fetchLiveRecordingData = function (req,res,next){
 	var trs = "";
 	var transcript = "";
 
+	res.status(200).jsonp({"msg":"success"})
 	if(req.body.speakers){
 		var speaker = req.body.speakers;
 		//process.emit('watson',{speaker:speaker,transcript:transcript})
@@ -352,12 +365,11 @@ exports.fetchLiveRecordingData = function (req,res,next){
 	}
 	if(req.params.type){
 		if(req.body.speakers){
-			process.emit("watson",{trans:req.body.speakers,user:req.user.socketId})
+			process.emit("watson",{trans:req.body.speakers,user:req.user.socketId,patient:req.patient})
 		}else{
-			process.emit("watson",{trans:{speaker:req.body.speaker,transcript:req.body.transcript},user:req.user.socketId})
+			process.emit("watson",{trans:{speaker:req.body.speaker,transcript:req.body.transcript},user:req.user.socketId,patient:req.patient})
 		}
 	}
-
 	if(req.body.speakers){
 		var count = 0;
 		var speakers = req.body.speakers;
@@ -376,7 +388,6 @@ exports.fetchLiveRecordingData = function (req,res,next){
 				} else {
 					if (tdRes) {
 						nlu.analyze({"features":{"sentiment":{}},"text":speakers[count].trs , language:'en'}, function(err, data){
-							console.log("here378",speakers[count].trs,err);
 							if(!err){
 								//process.emit('sentiment',{senti:data.sentiment,user:req.user.socketId});
 								Transcript_data.findOne({
@@ -448,94 +459,94 @@ exports.fetchLiveRecordingData = function (req,res,next){
 
 		}
 		addTrans(speakers,count);
-		}else{
-			//process.emit("watson",{trans:{speaker:req.body.speaker,transcript:req.body.transcript},user:req.user.socketId})
-			Transcript_dataObj = new Transcript_data({
-				transcript_id: req.params.transcriptionsId,
-				transcript: {
-					speaker: req.body.speaker,
-					transcript: req.body.transcript
+	}else{
+		//process.emit("watson",{trans:{speaker:req.body.speaker,transcript:req.body.transcript},user:req.user.socketId})
+		Transcript_dataObj = new Transcript_data({
+			transcript_id: req.params.transcriptionsId,
+			transcript: {
+				speaker: req.body.speaker,
+				transcript: req.body.transcript
+			}
+		});
+		Transcript_dataObj.save(function(err1, tdRes) {
+			if (err1) {
+				console.log(err);
+			} else {
+				if (tdRes) {
+					nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
+						if(!err){
+							//process.emit('sentiment',{senti:data.sentiment,user:req.user.socketId});
+							Transcript_data.findOne({
+								_id: tdRes._id,
+								transcript_id: req.params.transcriptionsId
+							}).exec(function(error, nluUpdate) {
+								if (!error) {
+									nluUpdate.transcript.nlu = data.sentiment;
+									nluUpdate.save(function(errrr, respp) {
+										//console.log('asdf',respp);
+									})
+								}
+							})
+						}
+					})
+					toneAnalyzer.tone({text:transcript}, function(err, data) {
+						var toneCount=1;
+					    if (err) {
+					      return next(err);
+					    }						    
+					    if(oldTone.length){
+					    	for(var i=0; i<oldTone.length; i++){
+					    		oldTone[i].score=oldTone[i].score*toneCount;
+					    		oldTone[i].score+=data.document_tone.tone_categories[0].tones[i].score;
+					    		oldTone[i].score/=(toneCount+1)
+					    	}
+					    	//process.emit('tone',{tone:oldTone,user:req.user.socketId});
+					    	Transcript_data.findOne({
+								_id: tdRes._id,
+								transcript_id: req.params.transcriptionsId
+							}).exec(function(error, nluUpdate) {
+								if (!error) {
+									nluUpdate.transcript.tone = oldTone
+									nluUpdate.save(function(errrr, respp) {
+										//console.log('asdf',respp);
+									})
+								}
+							})
+					    }else{
+					    	//process.emit('tone',{tone:data.document_tone.tone_categories[0].tones,user:req.user.socketId})
+					    	oldTone=data.document_tone.tone_categories[0].tones;
+					    	Transcript_data.findOne({
+								_id: tdRes._id,
+								transcript_id: req.params.transcriptionsId
+							}).exec(function(error, nluUpdate) {
+								if (!error) {
+									nluUpdate.transcript.tone = data.document_tone.tone_categories[0].tones
+									nluUpdate.save(function(errrr, respp) {
+										//console.log('asdf',respp);
+									})
+								}
+							})
+					    }    
+					    toneCount++;
+					});
 				}
-			});
-			Transcript_dataObj.save(function(err1, tdRes) {
-				if (err1) {
-					console.log(err);
-				} else {
-					if (tdRes) {
-						nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
-							if(!err){
-								//process.emit('sentiment',{senti:data.sentiment,user:req.user.socketId});
-								Transcript_data.findOne({
-									_id: tdRes._id,
-									transcript_id: req.params.transcriptionsId
-								}).exec(function(error, nluUpdate) {
-									if (!error) {
-										nluUpdate.transcript.nlu = data.sentiment;
-										nluUpdate.save(function(errrr, respp) {
-											//console.log('asdf',respp);
-										})
-									}
-								})
-							}
-						})
-						toneAnalyzer.tone({text:transcript}, function(err, data) {
-							var toneCount=1;
-						    if (err) {
-						      return next(err);
-						    }						    
-						    if(oldTone.length){
-						    	for(var i=0; i<oldTone.length; i++){
-						    		oldTone[i].score=oldTone[i].score*toneCount;
-						    		oldTone[i].score+=data.document_tone.tone_categories[0].tones[i].score;
-						    		oldTone[i].score/=(toneCount+1)
-						    	}
-						    	//process.emit('tone',{tone:oldTone,user:req.user.socketId});
-						    	Transcript_data.findOne({
-									_id: tdRes._id,
-									transcript_id: req.params.transcriptionsId
-								}).exec(function(error, nluUpdate) {
-									if (!error) {
-										nluUpdate.transcript.tone = oldTone
-										nluUpdate.save(function(errrr, respp) {
-											//console.log('asdf',respp);
-										})
-									}
-								})
-						    }else{
-						    	//process.emit('tone',{tone:data.document_tone.tone_categories[0].tones,user:req.user.socketId})
-						    	oldTone=data.document_tone.tone_categories[0].tones;
-						    	Transcript_data.findOne({
-									_id: tdRes._id,
-									transcript_id: req.params.transcriptionsId
-								}).exec(function(error, nluUpdate) {
-									if (!error) {
-										nluUpdate.transcript.tone = data.document_tone.tone_categories[0].tones
-										nluUpdate.save(function(errrr, respp) {
-											//console.log('asdf',respp);
-										})
-									}
-								})
-						    }    
-						    toneCount++;
-						});
-					}
-				}
-			})
-		}
+			}
+		})
+	}
 	// tra, socket, transciption_id,userId, patientId
 	// recommendation.fetchAll(trs, socket,req.params.transcriptionsId);
-	recommendation.fetchAll(trs,req.user.socketId,req.params.transcriptionsId);
+	recommendation.fetchAll(trs,req.user.socketId,req.params.transcriptionsId, req.patient);
 	var oldTone={};
 	
-	nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){console.log("here7");
+	nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
 		if(!err){
-			process.emit('sentiment',{senti:data.sentiment,user:req.user.socketId});
+			process.emit('sentiment',{senti:data.sentiment,user:req.user.socketId, patient:req.patient});
 		}
 	})
 	toneAnalyzer.tone({text:transcript}, function(error, data) {
 		var toneCount=1;
 	    if (error) {
-	      return next(error);
+	      //return next(error);
 	    }						    
 	    if(oldTone.length){
 	    	for(var i=0; i<oldTone.length; i++){
@@ -543,12 +554,12 @@ exports.fetchLiveRecordingData = function (req,res,next){
 	    		oldTone[i].score+=data.document_tone.tone_categories[0].tones[i].score;
 	    		oldTone[i].score/=(toneCount+1)
 	    	}
-	    	process.emit('tone',{tone:oldTone,user:req.user.socketId});
+	    	process.emit('tone',{tone:oldTone,user:req.user.socketId, patient:req.patient});
 	    }else{
-	    	process.emit('tone',{tone:data.document_tone.tone_categories[0].tones,user:req.user.socketId})
+	    	process.emit('tone',{tone:data.document_tone.tone_categories[0].tones,user:req.user.socketId, patient:req.patient})
 	    	oldTone=data.document_tone.tone_categories[0].tones;	
 	    }    
 	    toneCount++;
 	});
-	res.status(200).jsonp({"msg":"success"})
+	
 }

@@ -1,6 +1,7 @@
 var jwt = require('jsonwebtoken');
 var encKey='shhhhh';
 var User=require('./users').User;
+var Transcript = require('./../model/transcript.js');
 
 //backdate a jwt 30 seconds 
 //var older_token = jwt.sign({ foo: 'bar', iat: Math.floor(Date.now() / 1000) - 30 }, 'shhhhh');
@@ -48,7 +49,8 @@ exports.validateToken = function(req, res, next){
 
 
 exports.validateParamToken = function(req, res, next){	
-	if(req.params.userId){		
+	if(req.params.userId){
+		console.log("req.params.userId",req.params.userId)		
 		jwt.verify(req.params.userId, encKey, function(err, decoded) {
 			if(err){
 				res.status(401).jsonp({"msg":err});
@@ -56,7 +58,16 @@ exports.validateParamToken = function(req, res, next){
 				User.findOne({_id:decoded["_doc"]._id}).exec(function(err, user){
 					if(!err){
 						req.user=user;
-						next();
+						if(req.params.transcriptionsId){
+							Transcript.findOne({_id:req.params.transcriptionsId},{patient_id:true}).exec(function(err,trs){
+								if(!err){
+									req.patient=trs.patient_id;									
+								}
+								next();
+							})
+						}else{
+							next();	
+						}
 					}
 				})
 			}  
