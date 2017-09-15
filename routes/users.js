@@ -15,4 +15,8 @@ router.get('/fetchAll', user.fetchAll);
 
 router.get('/:userId', user.fetch);
 
+router.post('/update/:userId', user.updateUser);
+
+router.delete('/delete/:userId', user.delete);
+
 module.exports = router;

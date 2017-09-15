@@ -79,3 +79,23 @@ exports.update = function(user,socketId){
 	})
 }
 
+exports.updateUser = function(req,res){
+	User.findOne({_id:req.params.userId}).exec(function(err, user){
+		if(!err){
+			user.email = req.body.email;
+			user.password = req.body.password;
+			user.name = user.name;
+			user.save();
+			res.status(200).jsonp({msg:user});
+		}
+	})
+}
+
+exports.delete = function(req,res){
+	console.log("here");
+	User.remove({_id:req.params.userId}).exec(function(err, user){
+		if(!err){
+			res.send({msg: user});
+		}
+	})
+}

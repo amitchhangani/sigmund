@@ -10,4 +10,6 @@ router.get('/:type', /*token.validateToken,*/ recommendation.fetch);
 
 router.post('/', /*token.validateToken,*/ recommendation.save);
 
+router.get('/fetchall', /*token.validateToken,*/ recommendation.fetchAll);
+
 module.exports = router;

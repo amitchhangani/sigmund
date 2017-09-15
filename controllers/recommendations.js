@@ -5,6 +5,7 @@ const vcapServices = require('vcap_services');
 
 var Recommendation = mongoose.model('Recommendation', new Schema({ name: String, tags:[], factor: Number, type: Number /*0 Recommendations,1 Danger*/  }));
 
+var PatientRecomendation = require('./../model/patient_recommendation');
 
 exports.fetch = function(req, res, next) {
   	Recommendation.find({type:req.params.type}).exec(function(err,recommendations){
@@ -63,8 +64,8 @@ exports.save = function(req, res, next) {
 }
 
 var transcript='';
-
-exports.fetchAll = function(text, socket) {
+// tra, socket, transciption_id,userId, patientId
+exports.fetchAll = function(text, socket, transcription_id) {
 	transcript=text;
 	var result = [];
 	var danger = [];
@@ -106,8 +107,18 @@ exports.fetchAll = function(text, socket) {
 						result[resulti].tags.push({"tag":recommendations[resulti].tags[j].value, "count":transcript.split(recommendations[resulti].tags[j].value).length-1});
 					}						
 				}				
-			}			
+			}//{ name: 'Risky', tags: [ [Object] ], count: 1, percent: 10 }			
 			process.emit('recommendations',{reco:result,user:socket});
+			var patientRec = new PatientRecomendation({ name : result[0].name, tags :result[0].tags , count :result[0].count , percent : result[0].percent, transcription_id : transcription_id  });
+			patientRec.save(function(err,data){
+				if(err){
+					console.log(err);
+				}else {
+					if(data){
+						//console.log("Patient Recomendations saved")
+					}
+				}
+			})
 		}
 	});
 }

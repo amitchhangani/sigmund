@@ -59,6 +59,23 @@ factor: Number,
 type: Number //0 Recommendations,1 Danger
 }));
 */
+exports.startLiveRec = function(req,res) {
+			var transObj = new Transcript({
+			user_id: req.user._id,
+			patient_id: req.params.patientId
+		});
+		transObj.save(function(err, resp) {
+			if (err) {
+				res.jsonp({msg : err})
+			} else {
+				if (resp) {
+					res.status(200).jsonp({data: resp});
+				}
+			}
+		})
+
+
+}
 
 exports.uploadFile = function(req, res, next) {
 
@@ -209,7 +226,8 @@ exports.uploadFile = function(req, res, next) {
 										if (tdRes) {
 											//console.log("nlunlunlunlunlunlunlul==>",spkr)
 											if (spkr != 0) {
-												recommendation.fetchAll(trs, socket);
+												// parameter => tra, socket, transciption_id 
+												recommendation.fetchAll(trs, socket,resp._id);
 												//console.log("nlunlunlunlunlunlunlul22")
 												nlu.analyze({
 													"features": {
@@ -339,18 +357,185 @@ exports.fetchLiveRecordingData = function (req,res,next){
 			process.emit("watson",{trans:{speaker:req.body.speaker,transcript:req.body.transcript},user:req.user.socketId})
 		}
 	}
-	recommendation.fetchAll(trs,req.user.socketId);
+
+	if(req.body.speakers){
+		var count = 0;
+		var speakers = req.body.speakers;
+		function addTrans(speakers,count){
+			//process.emit("watson",{trans:{speaker:req.body.speaker,transcript:req.body.transcript},user:req.user.socketId})
+			Transcript_dataObj = new Transcript_data({
+				transcript_id: req.params.transcriptionsId,
+				transcript: {
+					speaker: speakers[count].speaker,
+					transcript: speakers[count].transcript
+				}
+			});
+			Transcript_dataObj.save(function(err1, tdRes) {
+				if (err1) {
+					console.log(err);
+				} else {
+					if (tdRes) {
+						nlu.analyze({"features":{"sentiment":{}},"text":speakers[count].trs , language:'en'}, function(err, data){
+							console.log("here378",speakers[count].trs,err);
+							if(!err){
+								//process.emit('sentiment',{senti:data.sentiment,user:req.user.socketId});
+								Transcript_data.findOne({
+									_id: tdRes._id,
+									transcript_id: req.params.transcriptionsId
+								}).exec(function(error, nluUpdate) {
+									if (!error) {
+										nluUpdate.transcript.nlu = data.sentiment;
+										nluUpdate.save(function(errrr, respp) {
+											toneAnalyzer.tone({text:speakers[count].transcript}, function(err, data) {
+												var toneCount=1;
+											    if (err) {
+											      return next(err);
+											    }						    
+											    if(oldTone.length){
+											    	for(var i=0; i<oldTone.length; i++){
+											    		oldTone[i].score=oldTone[i].score*toneCount;
+											    		oldTone[i].score+=data.document_tone.tone_categories[0].tones[i].score;
+											    		oldTone[i].score/=(toneCount+1)
+											    	}
+											    	//process.emit('tone',{tone:oldTone,user:req.user.socketId});
+											    	Transcript_data.findOne({
+														_id: tdRes._id,
+														transcript_id: req.params.transcriptionsId
+													}).exec(function(error, nluUpdate) {
+														if (!error) {
+															nluUpdate.transcript.tone = oldTone
+															nluUpdate.save(function(errrr, respp) {
+																//console.log('asdf',respp);
+																count = count+1;
+																if(speakers.length === count){
+																}else {
+																	addTrans(speakers,count++)	
+																}
+																
+															})
+														}
+													})
+											    }else{
+											    	//process.emit('tone',{tone:data.document_tone.tone_categories[0].tones,user:req.user.socketId})
+											    	oldTone=data.document_tone.tone_categories[0].tones;
+											    	Transcript_data.findOne({
+														_id: tdRes._id,
+														transcript_id: req.params.transcriptionsId
+													}).exec(function(error, nluUpdate) {
+														if (!error) {
+															nluUpdate.transcript.tone = data.document_tone.tone_categories[0].tones
+															nluUpdate.save(function(errrr, respp) {
+																//console.log('asdf',respp);
+																count = count+1;
+																if(speakers.length === count){
+																}else {
+																	addTrans(speakers,count++)	
+																}
+															})
+														}
+													})
+											    }    
+											    toneCount++;
+											});
+										})
+									}
+								})
+							}
+						})
+					}
+				}
+			})
+
+		}
+		addTrans(speakers,count);
+		}else{
+			//process.emit("watson",{trans:{speaker:req.body.speaker,transcript:req.body.transcript},user:req.user.socketId})
+			Transcript_dataObj = new Transcript_data({
+				transcript_id: req.params.transcriptionsId,
+				transcript: {
+					speaker: req.body.speaker,
+					transcript: req.body.transcript
+				}
+			});
+			Transcript_dataObj.save(function(err1, tdRes) {
+				if (err1) {
+					console.log(err);
+				} else {
+					if (tdRes) {
+						nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
+							if(!err){
+								//process.emit('sentiment',{senti:data.sentiment,user:req.user.socketId});
+								Transcript_data.findOne({
+									_id: tdRes._id,
+									transcript_id: req.params.transcriptionsId
+								}).exec(function(error, nluUpdate) {
+									if (!error) {
+										nluUpdate.transcript.nlu = data.sentiment;
+										nluUpdate.save(function(errrr, respp) {
+											//console.log('asdf',respp);
+										})
+									}
+								})
+							}
+						})
+						toneAnalyzer.tone({text:transcript}, function(err, data) {
+							var toneCount=1;
+						    if (err) {
+						      return next(err);
+						    }						    
+						    if(oldTone.length){
+						    	for(var i=0; i<oldTone.length; i++){
+						    		oldTone[i].score=oldTone[i].score*toneCount;
+						    		oldTone[i].score+=data.document_tone.tone_categories[0].tones[i].score;
+						    		oldTone[i].score/=(toneCount+1)
+						    	}
+						    	//process.emit('tone',{tone:oldTone,user:req.user.socketId});
+						    	Transcript_data.findOne({
+									_id: tdRes._id,
+									transcript_id: req.params.transcriptionsId
+								}).exec(function(error, nluUpdate) {
+									if (!error) {
+										nluUpdate.transcript.tone = oldTone
+										nluUpdate.save(function(errrr, respp) {
+											//console.log('asdf',respp);
+										})
+									}
+								})
+						    }else{
+						    	//process.emit('tone',{tone:data.document_tone.tone_categories[0].tones,user:req.user.socketId})
+						    	oldTone=data.document_tone.tone_categories[0].tones;
+						    	Transcript_data.findOne({
+									_id: tdRes._id,
+									transcript_id: req.params.transcriptionsId
+								}).exec(function(error, nluUpdate) {
+									if (!error) {
+										nluUpdate.transcript.tone = data.document_tone.tone_categories[0].tones
+										nluUpdate.save(function(errrr, respp) {
+											//console.log('asdf',respp);
+										})
+									}
+								})
+						    }    
+						    toneCount++;
+						});
+					}
+				}
+			})
+		}
+	// tra, socket, transciption_id,userId, patientId
+	// recommendation.fetchAll(trs, socket,req.params.transcriptionsId);
+	recommendation.fetchAll(trs,req.user.socketId,req.params.transcriptionsId);
 	var oldTone={};
 	
-	nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
+	nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){console.log("here7");
 		if(!err){
 			process.emit('sentiment',{senti:data.sentiment,user:req.user.socketId});
 		}
 	})
-	toneAnalyzer.tone({text:transcript}, function(err, data) {
+	toneAnalyzer.tone({text:transcript}, function(error, data) {
 		var toneCount=1;
-	    if (err) {
-	      return next(err);
+	    if (error) {
+	      return next(error);
 	    }						    
 	    if(oldTone.length){
 	    	for(var i=0; i<oldTone.length; i++){
