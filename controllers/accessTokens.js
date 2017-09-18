@@ -49,8 +49,7 @@ exports.validateToken = function(req, res, next){
 
 
 exports.validateParamToken = function(req, res, next){	
-	if(req.params.userId){
-		console.log("req.params.userId",req.params.userId)		
+	if(req.params.userId){		
 		jwt.verify(req.params.userId, encKey, function(err, decoded) {
 			if(err){
 				res.status(401).jsonp({"msg":err});
