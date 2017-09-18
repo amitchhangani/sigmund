@@ -19,4 +19,8 @@ router.put('/update/:patientId', patient.update);
 
 router.get('/patient_transcription/:patientId', patient.getTranscription);
 
+router.get('/patient_all_transcription/:patientId', patient.getAllTranscription);
+
+router.get('/patient_all_patient', patient.getAllPatients);
+
 module.exports = router;

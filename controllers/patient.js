@@ -5,6 +5,10 @@ var Patient = mongoose.model('Patient', new Schema({ name: String, email: String
 var Transcript = require('./../model/transcript');
 var Transcript_data = require('./../model/transcript_data');
 
+var user = require("./users");
+var User = user.User;
+
+
 // exports.addPatient = function(req, res, next) {
 // 	var pt = new Patient({name : req.body.name, email : req.body.email});
 // 	pt.save(function(err,data){
@@ -20,6 +24,47 @@ var Transcript_data = require('./../model/transcript_data');
 
 
 	// Patient({name:"laxman", email:"laxmansingh@gmail.com"}).save();
+
+exports.getAllPatients = function(req,res){
+
+	data1 = [];
+	User.find({}).exec(function(err,data){
+		if(err){
+			res.status(401).jsonp({msg: err})
+		}else {
+			if(data.length){
+				var userArr = [];
+				for(var a in data){
+					userArr.push(data[a]._id);
+				}
+				Transcript.find({user_id: {$in : userArr}}).populate('patient_id').populate('user_id').exec(function(error,pData){
+					if(!error) {
+						for(var i in data){
+								var userPatient = {user : {},patientCount : null}
+							var countPatient = 0;
+							for(var j in pData){
+								if(data[i]._id.toString() == pData[j].user_id._id.toString() ){
+									
+									countPatient = countPatient+1;
+								}
+							}
+							if(countPatient){
+								userPatient.user = data[i];
+								userPatient.patientCount = countPatient;
+								data1.push(userPatient);
+							}
+							console.log(data1,"============");
+						}
+						res.status(200).jsonp({data: data1});
+					}
+				})
+			}else {
+				res.status(200).jsonp({msg: "No record found"})
+			}
+		}
+	})
+}
+
 
 exports.userPatient = function(req,res){
 	Transcript.find({user_id: req.params.userId}).populate('patient_id').exec(function(err,data){
