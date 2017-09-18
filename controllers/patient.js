@@ -53,7 +53,6 @@ exports.getAllPatients = function(req,res){
 								userPatient.patientCount = countPatient;
 								data1.push(userPatient);
 							}
-							console.log(data1,"============");
 						}
 						res.status(200).jsonp({data: data1});
 					}
