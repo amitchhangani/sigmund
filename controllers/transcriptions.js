@@ -353,7 +353,7 @@ exports.fetchLiveRecordingData = function (req,res,next){
 	if(req.body.speakers){
 		var speaker = req.body.speakers;
 		//process.emit('watson',{speaker:speaker,transcript:transcript})
-		var speaker0=0;
+		var speaker0=req.body.speakers[0].speaker;
 		for(var i=0; i<req.body.speakers.length; i++){
 			if(req.body.speakers[i].speaker!=speaker0){
 				transcript=req.body.speakers[i].transcript;
