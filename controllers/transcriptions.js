@@ -101,6 +101,7 @@ exports.uploadFile = function(req, res, next) {
 			patient_id: req.body.patient_id
 		});
 		transObj.save(function(err, resp) {
+			process.emit("transcriptionId",{user:req.user.socketId,transcriptionId:resp._id})
 			if (err) {
 				console.log(err);
 			} else {
@@ -384,7 +385,7 @@ exports.fetchLiveRecordingData = function (req,res,next){
 			});
 			Transcript_dataObj.save(function(err1, tdRes) {
 				if (err1) {
-					console.log(err);
+					console.log(err1);
 				} else {
 					if (tdRes) {
 						nlu.analyze({"features":{"sentiment":{}},"text":speakers[count].trs , language:'en'}, function(err, data){
@@ -535,31 +536,37 @@ exports.fetchLiveRecordingData = function (req,res,next){
 	}
 	// tra, socket, transciption_id,userId, patientId
 	// recommendation.fetchAll(trs, socket,req.params.transcriptionsId);
-	recommendation.fetchAll(trs,req.user.socketId,req.params.transcriptionsId, req.patient);
+	if(trs){
+		recommendation.fetchAll(trs,req.user.socketId,req.params.transcriptionsId, req.patient);	
+	}
+	
 	var oldTone={};
+	if(trs){
+		nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
+			if(!err){
+				process.emit('sentiment',{senti:data.sentiment,user:req.user.socketId, patient:req.patient});
+			}
+		})
+	}
 	
-	nlu.analyze({"features":{"sentiment":{}},"text":trs}, function(err, data){
-		if(!err){
-			process.emit('sentiment',{senti:data.sentiment,user:req.user.socketId, patient:req.patient});
-		}
-	})
-	toneAnalyzer.tone({text:transcript}, function(error, data) {
-		var toneCount=1;
-	    if (error) {
-	      //return next(error);
-	    }						    
-	    if(oldTone.length){
-	    	for(var i=0; i<oldTone.length; i++){
-	    		oldTone[i].score=oldTone[i].score*toneCount;
-	    		oldTone[i].score+=data.document_tone.tone_categories[0].tones[i].score;
-	    		oldTone[i].score/=(toneCount+1)
-	    	}
-	    	process.emit('tone',{tone:oldTone,user:req.user.socketId, patient:req.patient});
-	    }else{
-	    	process.emit('tone',{tone:data.document_tone.tone_categories[0].tones,user:req.user.socketId, patient:req.patient})
-	    	oldTone=data.document_tone.tone_categories[0].tones;	
-	    }    
-	    toneCount++;
-	});
-	
+	if(transcript){
+		toneAnalyzer.tone({text:transcript}, function(error, data) {
+			var toneCount=1;
+		    if (error) {
+		      //return next(error);
+		    }						    
+		    if(oldTone.length){
+		    	for(var i=0; i<oldTone.length; i++){
+		    		oldTone[i].score=oldTone[i].score*toneCount;
+		    		oldTone[i].score+=data.document_tone.tone_categories[0].tones[i].score;
+		    		oldTone[i].score/=(toneCount+1)
+		    	}
+		    	process.emit('tone',{tone:oldTone,user:req.user.socketId, patient:req.patient});
+		    }else{
+		    	process.emit('tone',{tone:data.document_tone.tone_categories[0].tones,user:req.user.socketId, patient:req.patient})
+		    	oldTone=data.document_tone.tone_categories[0].tones;	
+		    }    
+		    toneCount++;
+		});
+	}	
 }
