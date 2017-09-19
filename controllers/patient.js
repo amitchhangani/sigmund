@@ -178,25 +178,65 @@ exports.getTranscription = function(req,res){
 	})
 }
 
+// exports.getAllTranscription = function(req,res){
+// 	Transcript.find({patient_id : req.params.patientId}).exec(function(err,data){
+// 		if(err){
+// 			res.status(404).jsonp({"msg":err});	
+// 		}else {
+// 			if(data) {
+// 				//console.log("data",data.length)
+// 				var uArr = [];
+// 				for(var a in data){
+// 					uArr.push(data[a]._id);
+// 				}
+// 			Transcript_data.find({ transcript_id : {$in : uArr}}).exec(function(error,tData){
+// 				if(error){
+// 					res.status(404).jsonp({"msg":error});
+// 				}else{
+// 					if(tData) {
+// 						//console.log(tData.length);
+// 						res.status(200).jsonp({data : tData})
+// 					} else {
+// 						res.status(404).jsonp({"msg": "Patient data not available"});
+// 					}
+// 				}			
+// 			})
+// 		}else {
+// 			res.status(404).jsonp({"msg": "Patient data not available"});
+// 		}
+// 		}
+// 	})
+// }
+
 exports.getAllTranscription = function(req,res){
 	Transcript.find({patient_id : req.params.patientId}).exec(function(err,data){
 		if(err){
 			res.status(404).jsonp({"msg":err});	
 		}else {
 			if(data) {
-				//console.log("data",data.length)
 				var uArr = [];
+				transcriptArr = [];
 				for(var a in data){
 					uArr.push(data[a]._id);
 				}
-				console.log("data..",uArr);
 			Transcript_data.find({ transcript_id : {$in : uArr}}).exec(function(error,tData){
 				if(error){
 					res.status(404).jsonp({"msg":error});
 				}else{
 					if(tData) {
-						//console.log(tData.length);
-						res.status(200).jsonp({data : tData})
+						for(var a in uArr){
+								var tempArr = [];
+							for(var b in tData){
+								if( uArr[a].toString() === tData[b].transcript_id.toString() ){
+									tempArr.push(tData[b]);
+								}
+							}
+							// console.log("==================")
+							// console.log("transcriptArr",tempArr);
+							// console.log("==================")
+							transcriptArr.push(tempArr);
+						}
+						res.status(200).jsonp({data : transcriptArr})
 					} else {
 						res.status(404).jsonp({"msg": "Patient data not available"});
 					}
