@@ -13,6 +13,8 @@ router.get('/fetch_all', patient.fetchAll);
 
 router.get('/user_patient/:userId', patient.userPatient);
 
+router.get('/patient_user/:patientId', patient.patientUser);
+
 router.delete('/delete/:patientId', patient.delete);
 
 router.put('/update/:patientId', patient.update);

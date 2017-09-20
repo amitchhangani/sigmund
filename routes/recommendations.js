@@ -10,6 +10,8 @@ router.get('/fetchall', /*token.validateToken,*/ recommendation.fetchAll);
 
 router.get('/getPatientRecommendations', recommendation.getPatientRecommendations);
 
+router.get('/getPatientRec/:transcriptionId', recommendation.getPatientRec);
+
 router.get('/:type', /*token.validateToken,*/ recommendation.fetch);
 
 router.post('/', /*token.validateToken,*/ recommendation.save);

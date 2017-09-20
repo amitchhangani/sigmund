@@ -80,6 +80,21 @@ exports.userPatient = function(req,res){
 }
 
 
+exports.patientUser = function(req,res){
+	Transcript.find({patient_id: req.params.patientId}).populate('user_id').exec(function(err,data){
+		if(err){
+			res.status(404).jsonp({msg: err})
+		}else {
+			if(data.length){
+				res.status(200).jsonp({data : data});
+			}else {
+				res.status(404).jsonp({msg: "No record found"});
+			}
+		}
+	})
+}
+
+
 exports.add = function(req, res, next) {
 	console.log("here", req.body);
 
@@ -228,12 +243,11 @@ exports.getAllTranscription = function(req,res){
 								var tempArr = [];
 							for(var b in tData){
 								if( uArr[a].toString() === tData[b].transcript_id.toString() ){
+									if(tData[b])
 									tempArr.push(tData[b]);
 								}
 							}
-							// console.log("==================")
-							// console.log("transcriptArr",tempArr);
-							// console.log("==================")
+							if(tempArr.length)
 							transcriptArr.push(tempArr);
 						}
 						res.status(200).jsonp({data : transcriptArr})
