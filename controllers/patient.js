@@ -81,12 +81,10 @@ exports.userPatient = function(req,res){
 
 
 exports.patientUser = function(req,res){
-	console.log("req.params",req.params.patientId)
 	Transcript.find({patient_id: req.params.patientId}).populate('user_id').exec(function(err,data){
 		if(err){
 			res.status(404).jsonp({msg: err})
 		}else {
-			console.log("data",data)
 			if(data.length){
 				res.status(200).jsonp({data : data});
 			}else {
@@ -98,7 +96,6 @@ exports.patientUser = function(req,res){
 
 
 exports.add = function(req, res, next) {
-	console.log("here", req.body);
 
 	if(req.body.name && req.body.email){
 		Patient.findOne({email:req.body.email}).exec(function(err,patient){
@@ -157,7 +154,6 @@ exports.update = function(req, res, next) {
 			patient.save(function(err, update){
 				if(!err){
 					if(update){
-						console.log("data",patient)
 						res.status(200).jsonp({"data":patient,"msg":""});
 					}
 				}
@@ -170,7 +166,6 @@ exports.update = function(req, res, next) {
 }
 
 exports.delete = function(req, res, next) {
-	console.log("req.",req.params.patientId);
 	Patient.remove({_id:req.params.patientId}).exec(function(err,patient){
 		if(err){
 			res.status(401).jsonp({"msg":err});	
@@ -181,7 +176,6 @@ exports.delete = function(req, res, next) {
 }
 
 exports.getTranscription = function(req,res){
-	console.log("heheheh",req.params.patientId);
 	Transcript_data.find({ transcript_id : req.params.patientId}).exec(function(error,tData){
 		if(error){
 			res.status(404).jsonp({"msg":error});

@@ -1,4 +1,4 @@
-var mongoose = require('mongoose');
+	var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 const watson = require('watson-developer-cloud');
 const vcapServices = require('vcap_services');
@@ -22,7 +22,6 @@ exports.fetch = function(req, res, next) {
 exports.save = function(req, res, next) {
   	var recommendation = {};
   	var query = {};
-  	console.log("body", req.body)
   	if(req.body.tags){
 		recommendation.tags=[];
 		recommendation.tags=req.body.tags;
@@ -151,12 +150,10 @@ exports.getToken = function(req, res) {
 }
 
 exports.getPatientRecommendations = function(req, res){
-	console.log("first================")
 	var query={$where:'this.tags.length > 0'}
 	if(req.params.transcriptionId){
 		query['transcription_id'] = req.params.transcriptionId;
 	}
-	console.log("query",query)
 	PatientRecomendation.find(query,{tags:1}).exec(function(err, pr){
 		if(!err){
 			var tags={};
