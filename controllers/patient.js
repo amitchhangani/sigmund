@@ -81,10 +81,12 @@ exports.userPatient = function(req,res){
 
 
 exports.patientUser = function(req,res){
+	console.log("req.params",req.params.patientId)
 	Transcript.find({patient_id: req.params.patientId}).populate('user_id').exec(function(err,data){
 		if(err){
 			res.status(404).jsonp({msg: err})
 		}else {
+			console.log("data",data)
 			if(data.length){
 				res.status(200).jsonp({data : data});
 			}else {

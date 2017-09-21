@@ -12,17 +12,17 @@ var debug = require('debug')('signora:server');
 //var port = normalizePort(process.env.PORT || '4101');
 var port = normalizePort('4101');
 var app = express();
-var http = require('https');
-//var http = require('http');
+//var http = require('https');
+var http = require('http');
 
- var privateKey  = fs.readFileSync('./certs/stagingsdei_com.key', 'utf8');
+/* var privateKey  = fs.readFileSync('./certs/stagingsdei_com.key', 'utf8');
  var certificate = fs.readFileSync('./certs/c86aaff33f318ca4.crt', 'utf8');
  var ca = fs.readFileSync('./certs/gd_bundle-g2-g1.crt');
  var httpsOptions = {key: privateKey, cert: certificate, ca: ca};
+*/
 
-
-//var server = http.createServer(app);
-var server = http.createServer(httpsOptions,app);
+var server = http.createServer(app);
+//var server = http.createServer(httpsOptions,app);
 
 var jwt = require('jsonwebtoken');
 var encKey='shhhhh';
@@ -59,8 +59,8 @@ var walk = function(path) {
 walk(models_path);
 
 
-mongoose.connect('mongodb://testrnd:testrnd2780@localhost/testrnd');
-//mongoose.connect('mongodb://localhost/sigmund');
+//mongoose.connect('mongodb://testrnd:testrnd2780@localhost/testrnd');
+mongoose.connect('mongodb://localhost/sigmund');
 
 var Schema = mongoose.Schema;
 // view engine setup
@@ -68,8 +68,8 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 const corsOptions = {
-  'origin': 'https://stagingsdei.com',
-  //'origin': 'http://localhost:4200',
+  //'origin': 'https://stagingsdei.com',
+  'origin': 'http://localhost:4200',
   'methods': ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   'credentials': true,
   'allowedHeaders': ['Content-Type', 'Authorization'],

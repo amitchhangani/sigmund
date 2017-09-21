@@ -152,31 +152,13 @@ exports.getToken = function(req, res) {
 
 exports.getPatientRecommendations = function(req, res){
 	console.log("first================")
-	PatientRecomendation.find({$where:'this.tags.length > 0'},{tags:1}).exec(function(err, pr){
+	var query={$where:'this.tags.length > 0'}
+	if(req.params.transcriptionId){
+		query['transcription_id'] = req.params.transcriptionId;
+	}
+	console.log("query",query)
+	PatientRecomendation.find(query,{tags:1}).exec(function(err, pr){
 		if(!err){
-			var tags={};
-			for(var i=0; i < pr.length; i++){
-				for(var j=0; j < pr[i].tags.length; j++){
-					if(tags[pr[i].tags[j].tag]){
-						tags[pr[i].tags[j].tag]+=pr[i].tags[j].count;
-					}else{
-						tags[pr[i].tags[j].tag]=pr[i].tags[j].count;
-					}
-				}
-			}
-			res.status(200).jsonp({msg:'',tags:tags})
-		}else{
-			res.status(404).jsonp({msg:err})
-		}
-	})
-}
-
-// for specific trancsciptionid
-exports.getPatientRec = function(req, res){
-	console.log("jeeeheh",req.params.transcriptionId);
-	PatientRecomendation.find({$where:'this.tags.length > 0', transcription_id : "59bb829c5e0c1f301f78a918"},{tags:1}).exec(function(err, pr){
-		if(!err){
-			console.log('====asdf=======',pr);
 			var tags={};
 			for(var i=0; i < pr.length; i++){
 				for(var j=0; j < pr[i].tags.length; j++){
