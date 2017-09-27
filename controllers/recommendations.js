@@ -127,8 +127,8 @@ exports.fetchAll = function(text, socket, transcription_id, patient) {
 var sttAuthService = new watson.AuthorizationV1(
   Object.assign(
     {
-      username: "e7e41131-81b3-47be-8525-f4065fc5314e", // or hard-code credentials here
-      password: "q8D4DqkC3BOr"
+	username: "69b171a5-3727-435c-8284-53ad30e9c281",
+ 	password: "oC05nCtWB23E"
     },
     vcapServices.getCredentials('speech_to_text') // pulls credentials from environment in bluemix, otherwise returns {}
   )

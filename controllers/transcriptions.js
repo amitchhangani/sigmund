@@ -14,8 +14,8 @@ var encKey = 'shhhhh';
 
 var client = request.createClient('http://localhost:3000');
 var speech_to_text = new SpeechToTextV1({
-	username: 'e7e41131-81b3-47be-8525-f4065fc5314e',
-	password: 'q8D4DqkC3BOr'
+  "username": "69b171a5-3727-435c-8284-53ad30e9c281",
+  "password": "oC05nCtWB23E"
 });
 var user = require("./users");
 var User = user.User;
@@ -34,18 +34,17 @@ var Transcript_data = require('./../model/transcript_data.js');
 var toneAnalyzer = new ToneAnalyzerV3({
 	// If unspecified here, the TONE_ANALYZER_USERNAME and TONE_ANALYZER_PASSWORD environment properties will be checked
 	// After that, the SDK will fall back to the bluemix-provided VCAP_SERVICES environment property
-	username: '73ab9669-5393-4ee4-a32c-c7de4cdec26d',
-	password: 'jDuUGZAJi0sd',
+	username: "41601080-e8d0-4666-91c3-97e9ecbccb6a",
+ 	password: "qk4tomRWi27I",
 	version_date: '2016-05-19'
 });
 
 const NaturalLanguageUnderstandingV1 = require('watson-developer-cloud/natural-language-understanding/v1.js');
 const nlu = new NaturalLanguageUnderstandingV1({
-	username: '2415dec1-4d5d-4968-80b8-8ea909b1da4a',
-	password: 'ISSsONvpTnbq',
+	"username": "c4f0a587-50b1-4a14-ab8b-cfa1372fe00a",
+	"password": "VzEuUnq6FtoD",
 	version_date: NaturalLanguageUnderstandingV1.VERSION_DATE_2016_01_23
 });
-
 var multer = require('multer')
 var upload = multer({
 	dest: 'uploads/'
