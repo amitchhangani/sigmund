@@ -2,6 +2,7 @@ var mongoose = require('mongoose');
 var path = require('path');
 var Schema = mongoose.Schema;
 var multer = require('multer');
+var mp3Duration = require('mp3-duration');
 var upload = multer({
 	dest: 'uploads/'
 });
@@ -20,6 +21,7 @@ var speech_to_text = new SpeechToTextV1({
 var user = require("./users");
 var User = user.User;
 
+var mm = require('musicmetadata');
 
 var recommendation = require('./recommendations');
 
@@ -75,25 +77,40 @@ exports.startLiveRec = function(req,res) {
 
 
 }
+ 
+
+
+
 
 exports.uploadFile = function(req, res, next) {
-
+	var file_path;
 	var storage = multer.diskStorage({
 		destination: function(req, file, callback) {
-
 			callback(null, './uploads')
 		},
 		filename: function(req, file, callback) {
-			callback(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
-			res.status(200).jsonp({
-				"msg": "success"
-			});
+			var file_name = file.fieldname + '-' + Date.now() + path.extname(file.originalname);
+			console.log("filename",file_name);
+			 file_path = path.resolve(__dirname + "/../uploads/"+file_name);
+			callback(null, file_name)
 		}
 	})
 	var upload = multer({
 		storage: storage
 	}).single('file')
 	upload(req, res, function(err) {
+
+		mp3Duration(file_path, function (err, duration) {
+			  if (err) return console.log(err.message);
+				
+				res.status(200).jsonp({
+					"msg": "success",
+					"duration": duration
+				});
+
+			});
+
+
 		//saving each transcription as a saperate document
 		var transObj = new Transcript({
 			user_id: req.user._id,
