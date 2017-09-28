@@ -84,11 +84,13 @@ exports.startLiveRec = function(req,res) {
 
 exports.uploadFile = function(req, res, next) {
 	var file_path;
+	var mime_type;
 	var storage = multer.diskStorage({
 		destination: function(req, file, callback) {
 			callback(null, './uploads')
 		},
 		filename: function(req, file, callback) {
+			mime_type = file.mimetype;
 			var file_name = file.fieldname + '-' + Date.now() + path.extname(file.originalname);
 			console.log("filename",file_name);
 			 file_path = path.resolve(__dirname + "/../uploads/"+file_name);
@@ -102,11 +104,16 @@ exports.uploadFile = function(req, res, next) {
 
 		mp3Duration(file_path, function (err, duration) {
 			  if (err) return console.log(err.message);
-				
-				res.status(200).jsonp({
-					"msg": "success",
-					"duration": duration
-				});
+				if (mime_type != 'audio/mp3'){
+					res.status(200).jsonp({
+						"msg": "success"
+					});
+				}else {
+					res.status(200).jsonp({
+						"msg": "success",
+						"duration": duration
+					});
+				}
 
 			});
 
