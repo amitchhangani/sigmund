@@ -91,6 +91,7 @@ exports.uploadFile = function(req, res, next) {
 		},
 		filename: function(req, file, callback) {
 			mime_type = file.mimetype;
+			console.log("mime_type", mime_type);
 			var file_name = file.fieldname + '-' + Date.now() + path.extname(file.originalname);
 			console.log("filename",file_name);
 			 file_path = path.resolve(__dirname + "/../uploads/"+file_name);
@@ -103,15 +104,16 @@ exports.uploadFile = function(req, res, next) {
 	upload(req, res, function(err) {
 
 		mp3Duration(file_path, function (err, duration) {
+			console.log("duration", duration);
 			  if (err) return console.log(err.message);
-				if (mime_type != 'audio/mp3'){
-					res.status(200).jsonp({
-						"msg": "success"
-					});
-				}else {
+				if (mime_type === 'audio/mp3' || mime_type === 'audio/mpeg'){
 					res.status(200).jsonp({
 						"msg": "success",
 						"duration": duration
+					});
+				}else {
+					res.status(200).jsonp({
+						"msg": "success"
 					});
 				}
 
