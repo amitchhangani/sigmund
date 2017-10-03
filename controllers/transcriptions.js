@@ -3,6 +3,8 @@ var path = require('path');
 var Schema = mongoose.Schema;
 var multer = require('multer');
 var mp3Duration = require('mp3-duration');
+var mm = require('music-metadata');
+const util = require('util');
 var upload = multer({
 	dest: 'uploads/'
 });
@@ -20,8 +22,6 @@ var speech_to_text = new SpeechToTextV1({
 });
 var user = require("./users");
 var User = user.User;
-
-var mm = require('musicmetadata');
 
 var recommendation = require('./recommendations');
 
@@ -102,22 +102,27 @@ exports.uploadFile = function(req, res, next) {
 		storage: storage
 	}).single('file')
 	upload(req, res, function(err) {
-
-		mp3Duration(file_path, function (err, duration) {
-			console.log("duration", duration);
+		if( mime_type === 'audio/flac' ||  mime_type === 'audio/ogg' || mime_type === 'video/webm' ){
+			mp3Duration(file_path, function (err, duration) {
 			  if (err) return console.log(err.message);
-				if (mime_type === 'audio/mp3' || mime_type === 'audio/mpeg'){
 					res.status(200).jsonp({
 						"msg": "success",
 						"duration": duration
 					});
-				}else {
-					res.status(200).jsonp({
-						"msg": "success"
-					});
-				}
 
 			});
+		}else {
+			mm.parseFile(file_path, {duration: true})
+			  .then(function (metadata) {
+			    res.status(200).jsonp({
+					"msg": "success",
+					"duration": metadata.format.duration
+				});
+			  })
+			  .catch(function (err) {
+			    console.error(err.message);
+			  });
+		}
 
 
 		//saving each transcription as a saperate document
