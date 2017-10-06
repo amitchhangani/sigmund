@@ -98,9 +98,16 @@ exports.updateUser = function(req,res){
 		if(!err){
 			user.email = req.body.email;
 			user.password = req.body.password;
-			user.name = user.name;
-			user.save();
-			res.status(200).jsonp({msg:user});
+			user.name = req.body.name;
+			user.save(function(err,data){
+				if(err){
+					res.status(404).jsonp({msg:err});
+				}else {
+					if(data){
+						res.status(200).jsonp({msg:data});
+					}
+				}
+			});
 		}
 	})
 }
