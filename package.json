@@ -17,7 +17,11 @@
     "morgan": "~1.8.1",
     "mp3-duration": "^1.0.10",
     "multer": "^1.3.0",
+<<<<<<< Updated upstream
     "music-metadata": "^0.8.6",
+=======
+    "musicmetadata": "^2.0.5",
+>>>>>>> Stashed changes
     "request-json": "^0.6.2",
     "serve-favicon": "~2.4.2",
     "socket.io": "^2.0.3",

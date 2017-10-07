@@ -9,4 +9,5 @@ router.post('/fetchLiveRecordingData/:transcriptionsId/:userId', token.validateP
 router.post('/fetchLiveRecordingData/:transcriptionsId/:userId/:type', token.validateParamToken, transcriptions.fetchLiveRecordingData);
 router.get('/startLiveRec/:patientId/:userId', token.validateParamToken, transcriptions.startLiveRec);
 router.get('/saveDuration/:transcript/:duration',transcriptions.saveDuration);
+router.get('/getTranscript/:transcript',transcriptions.getTranscript);
 module.exports = router;

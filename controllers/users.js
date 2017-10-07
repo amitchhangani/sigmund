@@ -13,6 +13,7 @@ exports.User = User = mongoose.model('User', new Schema({ name: String, email: S
 exports.login = function(req, res, next) {
 	if(req.body.email && req.body.password){
 		User.findOne({email:req.body.email,password:req.body.password}).exec(function(err,user){
+			console.log("lllllloooooooogggggggo",user);
 			if(err){
 				res.status(401).jsonp({"msg":err});	
 			}else if(user){
@@ -28,7 +29,6 @@ exports.login = function(req, res, next) {
 }
 
 exports.register = function(req, res, next) {
-	console.log("req.body==--009027608293",req.body);
 	if(req.body.email && req.body.password && req.body.name){
 		User.findOne({email:req.body.email}).exec(function(err,user){
 			if(err){

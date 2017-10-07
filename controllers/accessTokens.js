@@ -12,6 +12,7 @@ exports.getToken = function(req, res, next){
 	user.token=token;
 	user.name=req.user.name;
 	user.email=req.user.email;
+	user.image = req.user.image;
 	user._id=req.user._id;
 	res.status(200).jsonp({"data":user,"msg":""});
 }

@@ -81,7 +81,6 @@ exports.startLiveRec = function(req,res) {
 
 
 
-
 exports.uploadFile = function(req, res, next) {
 	var file_path;
 	var mime_type;
@@ -625,6 +624,18 @@ exports.saveDuration = function(req,res){
 					res.status(200).jsonp({msg: "success"});
 				}
 			});
+		}
+	})
+}
+
+exports.getTranscript = function(req,res){	
+	Transcript.findOne({_id:req.params.transcript}).populate('user_id','name email image').populate('patient_id').exec(function(err, transcript){
+		if(!err){
+			if(transcript){
+				res.status(200).jsonp({data : transcript});
+			}else {
+				res.status(404).jsonp({msg:"Transcript not found"})
+			}
 		}
 	})
 }

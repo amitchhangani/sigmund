@@ -89,7 +89,7 @@ exports.getAllPatients = function(req,res){
 
 exports.userPatient = function(req,res){
 	var respArr = [];
-	Transcript.find({user_id: req.params.userId}).populate('user_id','name email').populate('patient_id').sort({created :-1}).exec(function(err,data){
+	Transcript.find({user_id: req.params.userId}).populate('user_id','name email image').populate('patient_id').sort({created :-1}).exec(function(err,data){
 		if(err){
 			res.status(404).jsonp({"msg":err});
 		}else {
@@ -109,8 +109,10 @@ exports.userPatient = function(req,res){
 										transcript_id : '',
 										patient_id : '',
 										patient_name : '',
+										patient_image : '',
 										patient_email: '',
 										therapist_name : '',
+										therapist_image : '',
 										therapist_email : '',
 										therapist_id : '',
 										date : "",
@@ -124,9 +126,11 @@ exports.userPatient = function(req,res){
 											respdata.transcript_id = prResp[j].transcription_id;
 											respdata.patient_id = data[i].patient_id._id;
 											respdata.patient_name = data[i].patient_id.name;
+											respdata.patient_image = data[i].patient_id.image;
 											respdata.patient_email = data[i].patient_id.email;
 											respdata.therapist_id = data[i].user_id._id
 											respdata.therapist_name = data[i].user_id.name;
+											respdata.therapist_image = data[i].user_id.image;
 											respdata.therapist_email = data[i].user_id.email;
 											respdata.risk = prResp[j].percent;
 											respdata.date = data[i].created;
@@ -193,9 +197,11 @@ exports.patientUser  = function(req,res){
 										transcript_id : '',
 										patient_id : '',
 										patient_name : '',
+										patient_image : '',
 										patient_email : '',
 										therapist_name : '',
 										therapist_email : '',
+										therapist_image : '',
 										therapist_id : '',
 										date : "",
 										duration : '',
@@ -209,9 +215,11 @@ exports.patientUser  = function(req,res){
 											respdata.patient_id = data[i].patient_id._id;
 											respdata.patient_name = data[i].patient_id.name;
 											respdata.patient_email = data[i].patient_id.email;
+											respdata.patient_image = data[i].patient_id.image;
 											respdata.therapist_id = data[i].user_id._id
 											respdata.therapist_name = data[i].user_id.name;
 											respdata.therapist_email = data[i].user_id.email;
+											respdata.therapist_image = data[i].user_id.image;
 											respdata.risk = prResp[j].percent;
 											respdata.date = data[i].created;
 											respdata.duration = data[i].transcript_duration;
@@ -408,7 +416,7 @@ exports.getAllTranscription = function(req,res){
 exports.getWeekTranscription = function(req,res){
 
 	var respArr = [];
-	Transcript.find({created : { $lte : Date.now() , $gt : (Date.now()- 7*24*60*60*1000) }}).populate('user_id','name email').populate('patient_id').sort({created :-1}).exec(function(err,data){
+	Transcript.find({created : { $lte : Date.now() , $gt : (Date.now()- 7*24*60*60*1000) }}).populate('user_id','name email image').populate('patient_id').sort({created :-1}).exec(function(err,data){
 		if(err){
 			res.status(404).jsonp({"msg":err});
 		}else {
@@ -427,8 +435,10 @@ exports.getWeekTranscription = function(req,res){
 									var respdata = {
 										transcript_id : '',
 										patient_id : '',
+										patient_image : '',
 										patient_name : '',
 										therapist_name : '',
+										therapist_image : '',
 										therapist_id : '',
 										date : "",
 										duration : '',
@@ -441,8 +451,10 @@ exports.getWeekTranscription = function(req,res){
 											respdata.transcript_id = prResp[j].transcription_id;
 											respdata.patient_id = data[i].patient_id._id;
 											respdata.patient_name = data[i].patient_id.name;
+											respdata.patient_image = data[i].patient_id.image;
 											respdata.therapist_id = data[i].user_id._id
 											respdata.therapist_name = data[i].user_id.name;
+											respdata.therapist_image = data[i].user_id.image;
 											respdata.risk = prResp[j].percent;
 											respdata.date = data[i].created;
 											respdata.duration = data[i].transcript_duration;
