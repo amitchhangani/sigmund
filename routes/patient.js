@@ -19,10 +19,14 @@ router.delete('/delete/:patientId', patient.delete);
 
 router.put('/update/:patientId', patient.update);
 
+router.post('/upload', patient.uploadFile);
+
 router.get('/patient_transcription/:patientId', patient.getTranscription);
 
 router.get('/patient_all_transcription/:patientId', patient.getAllTranscription);
 
 router.get('/patient_all_patient', patient.getAllPatients);
+
+router.get('/patient_week_transcription',patient.getWeekTranscription)
 
 module.exports = router;

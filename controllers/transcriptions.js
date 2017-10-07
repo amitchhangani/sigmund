@@ -85,6 +85,7 @@ exports.startLiveRec = function(req,res) {
 exports.uploadFile = function(req, res, next) {
 	var file_path;
 	var mime_type;
+	var transcript_duration;
 	var storage = multer.diskStorage({
 		destination: function(req, file, callback) {
 			callback(null, './uploads')
@@ -105,6 +106,8 @@ exports.uploadFile = function(req, res, next) {
 		if( mime_type === 'audio/flac' ||  mime_type === 'audio/ogg' || mime_type === 'video/webm' ){
 			mp3Duration(file_path, function (err, duration) {
 			  if (err) return console.log(err.message);
+				  	transcript_duration = duration;
+				  	console.log("transcript_duration1",transcript_duration)
 					res.status(200).jsonp({
 						"msg": "success",
 						"duration": duration
@@ -114,6 +117,8 @@ exports.uploadFile = function(req, res, next) {
 		}else {
 			mm.parseFile(file_path, {duration: true})
 			  .then(function (metadata) {
+			  	transcript_duration =  metadata.format.duration;
+			  	console.log("transcript_duration2",transcript_duration)
 			    res.status(200).jsonp({
 					"msg": "success",
 					"duration": metadata.format.duration
@@ -126,11 +131,20 @@ exports.uploadFile = function(req, res, next) {
 
 
 		//saving each transcription as a saperate document
+		
 		var transObj = new Transcript({
 			user_id: req.user._id,
-			patient_id: req.body.patient_id
+			patient_id: req.body.patient_id,
+			transcript_duration : transcript_duration
 		});
 		transObj.save(function(err, resp) {
+					setTimeout(function(){
+						Transcript.update({_id : resp._id },{$set : { transcript_duration : transcript_duration}}).exec(function(error1,update){
+							if(!err){
+								console.log("update",update);
+							}
+						})
+					},3000)
 			process.emit("transcriptionId",{user:req.user.socketId,transcriptionId:resp._id})
 			if (err) {
 				console.log(err);

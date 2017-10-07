@@ -13,6 +13,10 @@ var transcriptSchame = new Schema({
         type: Schema.Types.ObjectId, 
         ref: 'Patient'
     },
+    transcript_duration : {
+        type : Number,
+        default : 0
+    },
     created: {
                 type: Date,
                 default: Date.now
