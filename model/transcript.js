@@ -17,6 +17,10 @@ var transcriptSchame = new Schema({
         type : Number,
         default : 0
     },
+    self_harm : {
+        type : Number,
+        default : 0
+    },
     created: {
                 type: Date,
                 default: Date.now

@@ -6,7 +6,7 @@ const vcapServices = require('vcap_services');
 var Recommendation = mongoose.model('Recommendation', new Schema({ name: String, tags:[], factor: Number, type: Number /*0 Recommendations,1 Danger*/  }));
 
 var PatientRecomendation = require('./../model/patient_recommendation');
-
+var Transcript = require('./../model/transcript')
 exports.fetch = function(req, res, next) {
   	Recommendation.find({type:req.params.type}).exec(function(err,recommendations){
 		if(err){
@@ -92,6 +92,8 @@ exports.fetchAll = function(text, socket, transcription_id, patient) {
 				}
 			}
 			process.emit('danger',{danger:(d/x),user:socket,patient:patient});
+			var self_harmObj = d/x;
+			Transcript.update({_id: transcription_id},{$set : { self_harm : self_harmObj }}).exec();
 		}		
 	});
   	Recommendation.find({type:1}).exec(function(err,recommendations){

@@ -614,3 +614,17 @@ exports.fetchLiveRecordingData = function (req,res,next){
 		});
 	}	
 }
+
+
+exports.saveDuration = function(req,res){	
+	Transcript.findOne({_id:req.params.transcript}).exec(function(err, transcript){
+		if(!err){
+			transcript.transcript_duration=req.params.duration;
+			transcript.save(function(err){
+				if(!err){
+					res.status(200).jsonp({msg: "success"});
+				}
+			});
+		}
+	})
+}
