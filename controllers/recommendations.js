@@ -93,6 +93,9 @@ exports.fetchAll = function(text, socket, transcription_id, patient) {
 			}
 			process.emit('danger',{danger:(d/x),user:socket,patient:patient});
 			var self_harmObj = d/x;
+			if(isNaN(self_harmObj)) {
+				self_harmObj = 0;
+			}
 			Transcript.update({_id: transcription_id},{$set : { self_harm : self_harmObj }}).exec();
 		}		
 	});
